@@ -1,0 +1,7 @@
+Per aggiungere avr_fdvlib come collegamento al progetto:
+
+mklink /J avr_fdvlib c:\sviluppo\avr_fdvlib
+
+da Solution Explorer:
+- clickare bottone (in alto) "Show All Files"
+- su avr_fdvlib impostare "Include in Project" (tasto destro)
