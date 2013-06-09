@@ -30,7 +30,7 @@ namespace fdv
 {
 
   
-  class MRF24J40_PHY_MAC : public ExtInterrupt::IExtInterruptCallable, public ILinkLayer
+  class MRF24J40 : public ILinkLayer
   {
 
     private:
@@ -398,10 +398,6 @@ namespace fdv
       };
       Channel() : value(CHANNEL11) {}
       Channel(uint8_t value_) : value(value_) {}
-      //template<typename T> Channel(T c) : value(c) {}
-      //Channel operator++() { value = (value == CHANNEL26? CHANNEL11 : value + 1); return *this; }
-      //Channel operator+(Channel const& rhs) { uint8_t r = value + rhs.value; return r > CHANNEL26? CHANNEL11 : r; }
-      //Channel operator-(Channel const& rhs) { uint8_t r = value - rhs.value; return r < CHANNEL11? CHANNEL26 : r; }
 			bool operator==(Channel const& rhs) { return value == rhs.value; }
       bool operator<=(Channel const& rhs) { return value <= rhs.value; }
 		  uint8_t volatile value;
@@ -410,59 +406,26 @@ namespace fdv
 	  
     
 	  // maximum payload size
-	  static uint8_t const MAXPAYLOAD  = 109;
+	  static uint8_t const MAXPAYLOAD  = 108;
 		  
 	  
 	  // MRF24J40 general purpose timer value (each value = 8us), 0 = disabled
 	  static uint16_t const TIMERTOP   = 0;    // es. 12500 = 12500*8us = 100000us = 100ms (10 per second)
 
 
-    // maximum time to wait for a gateway in ms
-    static uint32_t const MAXGATEWAYWAITTIME = 800; // todo: fine tune
-    // minimum time to wait for a gateway in ms
-    static uint32_t const MINGATEWAYWAITTIME = 100; // todo: fine tune
-    
-
     // maximum number of link layer listeners
     static uint8_t const MAXLISTENERS = 3;
 
 
-    // number of items in discovered cache
-    static uint8_t const DISCOVEREDCACHESIZE = 3;
-        
-
     // maximum number of resends in case of no software ack received
-    static uint8_t const MAXSENDTRIES = 30;        
+    static uint8_t const MAXSENDTRIES = 3;
     
   private:
 
 
-    struct DiscoveredCacheItem
-    {
-      uint8_t destination;
-      uint8_t gateway;
-      uint8_t age;          // The path age. Starts from 0: when reach 255 the item is discarded.
-      
-      DiscoveredCacheItem()
-      {        
-      }
-      
-      DiscoveredCacheItem(uint8_t destination_, uint8_t gateway_)
-        : destination(destination_), gateway(gateway_), age(255)
-      {        
-      }
-      
-      bool operator == (DiscoveredCacheItem const& rhs)  
-      {
-        return destination == rhs.destination && gateway == rhs.gateway;
-      }
-    };
-    
-    
     enum AckType
     {
       ACK_NONE,      // no ack required
-      ACK_MRF24J40,  // automatic MRF24J40 ack      
       ACK_SOFTWARE   // software ack
     };
 
@@ -473,55 +436,21 @@ namespace fdv
       // this is a normal message, not a command
       CMD_NONE               = 0,
 
-      // send test connection to a specific device
-      // params (in EXTRA data):
-      //   1 byte = address of discovery path requester
-      // reply:
-      //   the device must reply with the LQI received, using CMD_TESTREPLY
-      CMD_TESTCONNDEVICE     = 1,
-      
-      // reply to a CMD_TESTCONNDEVICE message
-      // params (in EXTRA data):
-      //   1 byte = LQI
-      //   1 byte = address of discovery path requester
-      CMD_TESTREPLY          = 2,
-      
       // send change channel command (broadcast)
       // params:
       //    1 byte = new channel
-      CMD_CHANGECHANNEL      = 3,
-
-      // send discovery path (broadcast) (not re-broadcasted when received)
-      // params:
-      //   1 byte = destination to reach
-      // reply:
-      //   each device (not the sender) must reply with the LQI received from destination, using CMD_DISCOVERYPATHREPLY
-      CMD_DISCOVERYPATH      = 4,
-
-      // reply to CMD_DISCOVERYPATH message
-      // params (in EXTRA data):
-      //   1 byte = LQI
-      CMD_DISCOVERYPATHREPLY = 5,
-
-      // this is a gateway frame, need to forward to address in extraData[0]
-      CMD_GATEWAY_FORWARD    = 6,  
-      // params:
-      //   the message to forward
-      
-      // this message comes from a gateway, actual source address is inside extraData[0]
-      CMD_GATEWAY_ENDPOINT   = 7,
-      // params:
-      //   the message forwarded
+      CMD_CHANGECHANNEL      = 1,
     };
 
 
     static uint32_t const CMDDATASIZE = 2;
 	
-    // additional structure to contains commands data and info
+  
+    // additional structure to contain commands data and info
     struct CMDExtraData
     {
 		  CMD      command;                // CMD_NONE = normal message, otherwise a command (not a 802.15.4 command!). Inserted as first byte of frame payload
-		  uint8_t  extraData[CMDDATASIZE]; // Used when command = CMD_GATEWAY_FORWARD
+		  uint8_t  extraData[CMDDATASIZE]; // 
 		  uint8_t  LQI;                    // Link Quality Indication (0=bad quality, 255=max quality)
 		  uint8_t  RSSI;                   // Received Signal Strength Indicator (0=-100dBm, 255=-20dBm)      
     };
@@ -583,7 +512,6 @@ namespace fdv
     };
 
 
-
     struct MRFSendFrame
     {
       uint8_t         srcAddress;
@@ -619,11 +547,10 @@ namespace fdv
     // This driver uses 1 byte for address (allowing up to 255 devices in the same PANID, 0xFF reserved for broadcast)
     // "address" is the LinkLayer address. Only the first byte is used, so it must be used to differentiate among devices.
     // channel: 0..15 (channel_11..channel_26) : channel can be changed using setChannel
-    MRF24J40_PHY_MAC(Pin const* interruptPin, HardwareSPIMaster* spi, 
-	                   uint16_t PANID, LinkAddress const* address, Channel channel, 
-			               DeviceType deviceType, Speed speed, PGM_P key)
+    MRF24J40(HardwareSPIMaster* spi, 
+	           uint16_t PANID, LinkAddress const* address, Channel channel, 
+			       DeviceType deviceType, Speed speed, PGM_P key)
       : m_spi(spi),
-        m_interruptPin(interruptPin),
         m_channel(channel),
         m_deviceType(deviceType),
         m_PANID(PANID),
@@ -641,122 +568,109 @@ namespace fdv
       #ifdef VERBOSE     
       serial.write_P(PSTR("*** HARD RESET ***")); cout << endl;
       #endif
-      ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+
+      // status
+      m_available      = false;
+      m_frameReceived  = false;
+      m_frameSent      = false;
+      m_messageID      = Random::nextUInt16();
+
+      // Reset Power Module, Baseband and MAC
+      setReg(REG_SOFTRST, BIT_RSTPWR | BIT_RSTBB | BIT_RSTMAC);
+        
+      // Enable FIFO and set "Transmitter Enable On Time Symbol"
+      setReg(REG_PACON2, BIT_FIFOEN | (6 << SHIFT_TXONTS));
+        
+      // Set VCO Stabilization Period
+      setReg(REG_TXSTBL, 9 << SHIFT_RFSTBL);
+        
+      // Set RFOPT
+      setReg(REG_RFCON0, (3 << SHIFT_RFOPT));
+
+      // Set VCO Optimize Control
+      setReg(REG_RFCON1, 2);
+        
+      // enable RF-PLL
+      setReg(REG_RFCON2, BIT_PLLEN);
+
+      // enable TX filter control and 20Mhz Clock Recovery Control
+      setReg(REG_RFCON6, BIT_TXFIL | BIT_20MRECVR);
+        
+      // sleep clock (100kHz internal oscillator)
+      setReg(REG_RFCON7, VAL_SLPCLKSEL_100KHZ);
+        
+      // enable VCO
+      setReg(REG_RFCON8, BIT_RFVCO);
+        
+      // initialize CLKOUT pin enable and clock divisor (div by 1)
+      setReg(REG_SLPCON1, BIT_CLKOUTEN | (1 << SHIFT_SLPCLKDIV));
+        
+      // set CCA mode 1
+      setReg(REG_BBREG2, VAL_CCAMODE_1);
+
+      // set energy detection threshold for CCA
+      setReg(REG_CCAEDTH, 96);
+
+      // set RSSI mode (calculate for each received packet)
+      setReg(REG_BBREG6, BIT_RSSIMODE2);
+
+      // setup messages filter
+      setPromiscuousMode(false);
+        
+      // Set channel
+      setReg(REG_RFCON0, (m_channel.value << SHIFT_CHANNEL) | (getReg(REG_RFCON0) & 0x0F));
+        
+      // TX power (0dB = max)
+      setReg(REG_RFCON3, VAL_TXPWRL_00DB | VAL_TXPWRS_0p0DB);
+
+      // reset RF
+      resetRF();
+        
+      if (m_deviceType == MRF24J40MB)
       {
-        // status
-        m_available      = false;
-        m_frameReceived  = false;
-        m_frameSent      = false;
-        m_seqNumber      = 0;
-        m_waitingCMD     = CMD_NONE;
-
-        m_interruptPin->modeInput();
-        
-        // Reset Power Module, Baseband and MAC
-        setReg(REG_SOFTRST, BIT_RSTPWR | BIT_RSTBB | BIT_RSTMAC);
-        
-        // Enable FIFO and set "Transmitter Enable On Time Symbol"
-        setReg(REG_PACON2, BIT_FIFOEN | (6 << SHIFT_TXONTS));
-        
-        // Set VCO Stabilization Period
-        setReg(REG_TXSTBL, 9 << SHIFT_RFSTBL);
-        
-        // Set RFOPT
-        setReg(REG_RFCON0, (3 << SHIFT_RFOPT));
-
-        // Set VCO Optimize Control
-        setReg(REG_RFCON1, 2);
-        
-        // enable RF-PLL
-        setReg(REG_RFCON2, BIT_PLLEN);
-
-        // enable TX filter control and 20Mhz Clock Recovery Control
-        setReg(REG_RFCON6, BIT_TXFIL | BIT_20MRECVR);
-        
-        // sleep clock (100kHz internal oscillator)
-        setReg(REG_RFCON7, VAL_SLPCLKSEL_100KHZ);
-        
-        // enable VCO
-        setReg(REG_RFCON8, BIT_RFVCO);
-        
-        // initialize CLKOUT pin enable and clock divisor (div by 1)
-        setReg(REG_SLPCON1, BIT_CLKOUTEN | (1 << SHIFT_SLPCLKDIV));
-        
-        // set CCA mode 1
-        setReg(REG_BBREG2, VAL_CCAMODE_1);
-
-        // set energy detection threshold for CCA
-        setReg(REG_CCAEDTH, 96);
-
-        // set RSSI mode (calculate for each received packet)
-        setReg(REG_BBREG6, BIT_RSSIMODE2);
-
-        // setup messages filter
-        setPromiscuousMode(false);
-        
-        // Setup interrupts
-        setReg(REG_SLPCON0, BIT_INTEDGE);         // rising edge
-        setReg(REG_INTCON, 0xFF & ~BIT_RXIE & ~BIT_TXNIE);
-        
-        // Set channel
-        setReg(REG_RFCON0, (m_channel.value << SHIFT_CHANNEL) | (getReg(REG_RFCON0) & 0x0F));
-        
-        // TX power (0dB = max)
-        setReg(REG_RFCON3, VAL_TXPWRL_00DB | VAL_TXPWRS_0p0DB);
-
-        // reset RF
-        resetRF();
-        
-        if (m_deviceType == MRF24J40MB)
-        {
-          // PA/LNA (Power Amplifier / Low Noise Amplifier) state machine enable
-          //setReg(GPIODIR, 0x3F);
-          setReg(TESTMODE, (7 << SHIFT_TESTMODE) | (1 << SHIFT_RSSIWAIT));
-        }
-        
-        // flush RX fifo
-        setReg(REG_RXFLUSH, BIT_RXFLUSH);
-        
-        // SECCON1, enable encryption
-        setReg(REG_SECCON1, 0); // DISDEC=0 and DISENC=0
-        
-        // short MAC address
-        setReg(REG_SADRL, m_address[0]);
-        setReg(REG_SADRH, 0xFF);
-        
-        // long MAC address (used only when encryption is enabled)
-        // this MRF24J40 driver uses only one byte of the LinkAddress address (that is 6 bytes).
-        setReg(REG_EADR0, m_address[0]);
-        setReg(REG_EADR1, 0xFF);
-        setReg(REG_EADR2, 0xFF);
-        setReg(REG_EADR3, 0xFF);
-        setReg(REG_EADR4, 0xFF);
-        setReg(REG_EADR5, 0xFF);
-        setReg(REG_EADR6, 0xFF);
-        setReg(REG_EADR7, 0xFF);
-        
-        // PAN ID
-        setReg(REG_PANIDL, 0xFF & m_PANID);
-        setReg(REG_PANIDH, (m_PANID >> 8));
-        
-        // verify PAN ID
-        if ((0xFF & m_PANID) != getReg(REG_PANIDL) || (m_PANID >> 8) != getReg(REG_PANIDH))
-          return;
-
-        if (m_speed == SPEED_625_kbps)
-        {
-          // Turbo mode
-          setReg(REG_BBREG0, VAL_TURBO);
-          setReg(REG_BBREG3, VAL_PREVALIDTH_TURBO | (0x4 << SHIFT_PREDETTH));
-          setReg(REG_BBREG4, VAL_CSTH_TURBO | (7 << SHIFT_PRECNT));
-          resetRF();
-        }
-
-        // setup interrupt handler
-        ExtInterrupt::attach(m_interruptPin->EXT_INT, this, ExtInterrupt::EXTINT_RISING);
-
-        m_available = true;
+        // PA/LNA (Power Amplifier / Low Noise Amplifier) state machine enable
+        setReg(TESTMODE, (7 << SHIFT_TESTMODE) | (1 << SHIFT_RSSIWAIT));
       }
+        
+      // flush RX fifo
+      setReg(REG_RXFLUSH, BIT_RXFLUSH);
+        
+      // SECCON1, enable encryption
+      setReg(REG_SECCON1, 0); // DISDEC=0 and DISENC=0
+        
+      // short MAC address
+      setReg(REG_SADRL, m_address[0]);
+      setReg(REG_SADRH, 0xFF);
+        
+      // long MAC address (used only when encryption is enabled)
+      // this MRF24J40 driver uses only one byte of the LinkAddress address (that is 6 bytes).
+      setReg(REG_EADR0, m_address[0]);
+      setReg(REG_EADR1, 0xFF);
+      setReg(REG_EADR2, 0xFF);
+      setReg(REG_EADR3, 0xFF);
+      setReg(REG_EADR4, 0xFF);
+      setReg(REG_EADR5, 0xFF);
+      setReg(REG_EADR6, 0xFF);
+      setReg(REG_EADR7, 0xFF);
+        
+      // PAN ID
+      setReg(REG_PANIDL, 0xFF & m_PANID);
+      setReg(REG_PANIDH, (m_PANID >> 8));
+        
+      // verify PAN ID
+      if ((0xFF & m_PANID) != getReg(REG_PANIDL) || (m_PANID >> 8) != getReg(REG_PANIDH))
+        return;
+
+      if (m_speed == SPEED_625_kbps)
+      {
+        // Turbo mode
+        setReg(REG_BBREG0, VAL_TURBO);
+        setReg(REG_BBREG3, VAL_PREVALIDTH_TURBO | (0x4 << SHIFT_PREDETTH));
+        setReg(REG_BBREG4, VAL_CSTH_TURBO | (7 << SHIFT_PRECNT));
+        resetRF();
+      }
+
+      m_available = true;
     }
     
 
@@ -774,31 +688,28 @@ namespace fdv
 
   private:
 
-    void extInterrupt()
-    {      
-      
-		  if (!m_available)
-		    return;
-			
+
+    void checkInterrupt()
+    {
       uint8_t intstat = getReg(REG_INTSTAT);
-	  	  
-	    // Frame sent
+
+      // Frame sent
       if (intstat & BIT_TXNIF)
       {
         m_frameSent = true;
       }
-	  
-	    // Frame received
+
+      // Frame received
       if (intstat & BIT_RXIF)
-      {		    
+      {
         m_frameReceived = true;
       }
-	  
     }
-		  
+    		  
       
   public:
 	
+  
     void setPromiscuousMode(bool value)
     {
       // setup receive MAC control register
@@ -814,14 +725,12 @@ namespace fdv
       #ifdef VERBOSE
       serial.write_P(PSTR("*** RESET RF ***")); cout << endl;
       #endif
-      ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-      {
-        setReg(REG_RFCTL, BIT_RFRST); // reset on
-        delayMicroseconds(192);
-        setReg(REG_RFCTL, 0);         // reset off
-        delayMicroseconds(192);
-      }
+      setReg(REG_RFCTL, BIT_RFRST); // reset on
+      delayMicroseconds(192);
+      setReg(REG_RFCTL, 0);         // reset off
+      delayMicroseconds(192);
     }
+
 
     #ifdef VERBOSE
     void dumpRegisters()
@@ -844,13 +753,10 @@ namespace fdv
       #endif
 		  if (channel == m_channel)
 		    return;
-		  ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-		  {
-		    m_channel = channel;
-        // Set channel
-        setReg(REG_RFCON0, (channel.value << SHIFT_CHANNEL) | (getReg(REG_RFCON0) & 0x0F));
-        resetRF();
-		  }			
+		  m_channel = channel;
+      // Set channel
+      setReg(REG_RFCON0, (channel.value << SHIFT_CHANNEL) | (getReg(REG_RFCON0) & 0x0F));
+      resetRF();
 	  }
 	  
 	  
@@ -867,34 +773,8 @@ namespace fdv
 	  
 	  
   private:
-    
-	  
-	  
-	  void sendCMD_TESTCONNDEVICE(uint8_t dest, uint8_t discoveryPathRequester)
-	  {
-      #ifdef VERBOSE
-      serial.write_P(PSTR("sending CMD_TESTCONNDEVICE to ")); cout << (uint16_t)dest << endl;
-      #endif
-      MRFSendFrame frame(m_address[0], dest, 0x0000, NULL);
-  	  directSendFrame(&frame, ACK_NONE, CMD_TESTCONNDEVICE, &discoveryPathRequester, 1);
-	  }
-	  
-	  
-	  void sendCMD_TESTREPLY(uint8_t dest, uint8_t LQI, uint8_t discoveryPathRequester)
-	  {
-      #ifdef VERBOSE
-      serial.write_P(PSTR("sending CMD_TESTREPLY to ")); cout << (uint16_t)dest << endl;
-      #endif
-      uint8_t data[2] =
-      {
-        LQI,
-        discoveryPathRequester
-      };
-      MRFSendFrame frame(m_address[0], dest, 0x0000, NULL);
-      directSendFrame(&frame, ACK_NONE, CMD_TESTREPLY, &data[0], 2);
-	  }
-	  
-	  
+  
+    	  	  
 	  void sendCMD_CHANGECHANNEL(Channel channel)
 	  {
       uint8_t data[1] = {channel.value};
@@ -905,6 +785,7 @@ namespace fdv
 
     
   public:
+  
     
     void sendCMD_CHANGECHANNEL_ALL(Channel channel)
     {
@@ -918,41 +799,8 @@ namespace fdv
       setChannel(prevChannel);
     }
     
+    
   private:
-
-
-    // How discovery path works:
-    // 1) A needs to send a message to B, but send fails (no ACK received)
-    // 2) A sends CMD_DISCOVERYPATH(B) to broadcast
-    // 3) B receives CMD_DISCOVERYPATH(B)? Maybe, but discards it!
-    // 4) C receives CMD_DISCOVERYPATH(B) and sends CMD_TESTCONNDEVICE(A) to B
-    // 5) D receives CMD_DISCOVERYPATH(B) and sends CMD_TESTCONNDEVICE(A) to B
-    // 6) B receives CMD_TESTCONNDEVICE(A) from C (but not from D) and sends CMD_TESTREPLY(LQI_BC, A) to C
-    // 7) C receives CMD_TESTREPLY(LQI_BC, A) from B and sends CMD_DISCOVERYPATHREPLY(LQI_BC) to A
-    // 8) A receives CMD_DISCOVERYPATHREPLY(LQI_BC) from C and saves this gateway as the best gateway from A to B
-    void sendCMD_DISCOVERYPATH(uint8_t dest)
-    {
-      #ifdef VERBOSE
-      serial.write_P(PSTR("sending CMD_DISCOVERYPATH ")); cout << (uint16_t)dest << endl;
-      #endif
-      m_discoveredPath       = 0xFF;  // "broadcast" means "no path still found"
-      m_discoveredPathLQI    = 0;
-      m_discoveredGatewayLQI = 0;
-		  
-      DataList datalist(NULL, &dest, 1);
-      MRFSendFrame frame(m_address[0], 0xFF, 0x0000, &datalist);  // destination is broadcast
-      directSendFrame(&frame, ACK_NONE, CMD_DISCOVERYPATH);
-    }
-
-
-	  void sendCMD_DISCOVERYPATHREPLY(uint8_t dest, uint8_t LQI)
-	  {
-      #ifdef VERBOSE
-      serial.write_P(PSTR("sending CMD_DISCOVERYPATHREPLY ")); cout << (uint16_t)dest << endl;
-      #endif
-      MRFSendFrame frame(m_address[0], dest, 0x0000, NULL);
-      directSendFrame(&frame, ACK_NONE, CMD_DISCOVERYPATHREPLY, &LQI, 1);     
-	  }
 
 
 	  // if frame is a CMD process it.
@@ -960,59 +808,6 @@ namespace fdv
 	  {
 			switch (extra->command)
 			{        
-        case CMD_TESTCONNDEVICE:
-          if (frame->dataLength == 0)
-          {
-            #ifdef VERBOSE
-            serial.write_P(PSTR("CMD_TESTCONNDEVICE from")); cout << (uint16_t)frame->srcAddress << endl;
-            #endif
-				    sendCMD_TESTREPLY(frame->srcAddress, extra->LQI, extra->extraData[0]);
-          }
-          return true;
-
-				case CMD_TESTREPLY:
-				  // reply back the received LQI and original path requester
-          if (frame->dataLength == 0)
-          {
-            #ifdef VERBOSE
-				    serial.write_P(PSTR("CMD_TESTREPLY from ")); cout << (uint16_t)frame->srcAddress << endl;
-            #endif
-				    sendCMD_DISCOVERYPATHREPLY(extra->extraData[1], extra->extraData[0]);
-          }
-				  return true;
-
-        case CMD_DISCOVERYPATH:
-          if (frame->dataLength == 1)
-          {
-            uint8_t addr = frame->payload[0];
-            #ifdef VERBOSE
-            serial.write_P(PSTR("CMD_DISCOVERYPATH ")); cout << (uint16_t)addr << endl;
-            #endif            
-            if (addr != m_address[0])
-            {
-              // forward request to the specific device
-              delayMicroseconds( 500 + Random::nextUInt16(0, 5000) ); // wait random time 500..5000us
-              sendCMD_TESTCONNDEVICE(addr, frame->srcAddress);
-            } 
-          }
-          return true;
-
-        case CMD_DISCOVERYPATHREPLY:
-          if (frame->dataLength == 0)
-          {
-            #ifdef VERBOSE
-            serial.write_P(PSTR("CMD_DISCOVERYPATHREPLY from ")); cout << (uint16_t)frame->srcAddress << endl;
-            #endif
-            if ( m_discoveredPath == 0xFF || ((uint16_t)m_discoveredPathLQI + m_discoveredGatewayLQI) / 2 < ((uint16_t)extra->extraData[0] + extra->LQI) / 2 )
-            {              
-              // found a path (or a better path)
-              m_discoveredPath       = frame->srcAddress;
-              m_discoveredPathLQI    = extra->extraData[0];
-              m_discoveredGatewayLQI = extra->LQI;
-            }
-          }
-          return true;
-
 				case CMD_CHANGECHANNEL:
           if (frame->dataLength == 1)
           {
@@ -1023,39 +818,10 @@ namespace fdv
           }
           return true;
 
-        case CMD_GATEWAY_FORWARD:
-        {
-          // this message needs to be forwarded          
-          uint8_t destAddr = extra->extraData[0];
-          uint8_t origSrcAddress = frame->srcAddress;
-          DataList datalist(NULL, frame->payload, frame->dataLength);
-          MRFSendFrame outFrame(m_address[0], destAddr, frame->type_length, &datalist);
-          directSendFrame(&outFrame, ACK_SOFTWARE, CMD_GATEWAY_ENDPOINT, &origSrcAddress, 1);
-          
-          #ifdef VERBOSE
-          serial.write_P(PSTR("GATEWAY_FORWARD orig=")); cout << (uint16_t)frame->srcAddress;
-          serial.write_P(PSTR(" newdest=")); cout << (uint16_t)outFrame.destAddress << endl;
-          #endif
-          
-          return true;      // just means "processed"
-        }
-
-        case CMD_GATEWAY_ENDPOINT:
-        {
-          // this is an endpoint message, just replace address with the original one
-          #ifdef VERBOSE
-          serial.write_P(PSTR("sender used gateway")); cout << endl;
-          #endif
-          
-          frame->srcAddress = extra->extraData[0];
-          return false;     // just means "not processed"
-        }
-
         default:
           return true;  // unknown command, return "processed" anyway
 			}				  
 	  }
-
 
 	  
   private:
@@ -1068,147 +834,136 @@ namespace fdv
       serial.write_P(PSTR("directSendFrame")); cout << endl;
       #endif
       
+      ++m_messageID;
+      
       uint8_t const payloadlen = (frame->dataList? frame->dataList->calcLength() : 0);
       
       if (payloadlen > MAXPAYLOAD)
         return SendFail; // packet too long
       
-      bool const broadcast       = frame->destAddress == 0xFF;
-      bool const ackRequired     = !broadcast && ackType == ACK_MRF24J40;
-      bool const softack         = ackType == ACK_SOFTWARE;
-      
       #ifdef VERBOSE
       serial.write_P(PSTR("   source      = ")); cout << (uint16_t)frame->srcAddress << endl;
       serial.write_P(PSTR("   dest        = ")); cout << (uint16_t)frame->destAddress << endl;
       serial.write_P(PSTR("   protocol    = ")); cout << frame->type_length << endl;
-      //serial.write_P(PSTR("   broadcast   = ")); cout << (broadcast? 'T' : 'F') << endl;
-      //serial.write_P(PSTR("   ackRequired = ")); cout << (ackRequired? 'T' : 'F') << endl;
       #endif   
             
       // 2 = FCF    1 = sequence number    2 = dest PANID    2 = destination address    2 = source address      
       uint8_t const hdrlen = 2 + 1 + 2 + 2 + 2;
       
-      // +2 is for message-id, +2 is for checksum field (non standard), +2 is for protocol (type_length) field
-      uint8_t const framelen = hdrlen + 2 + 2 + 2 + payloadlen + (command == CMD_NONE? 0 : CMDDATASIZE);
+      // +2 is for message-id, +2 is for checksum field (non standard), +2 is for protocol (type_length) field, +1 actual destination
+      uint8_t const framelen = hdrlen + 2 + 2 + 2 + 1 + payloadlen + (command == CMD_NONE? 0 : CMDDATASIZE);
 
       // calculate FCF (frame control field)      
 	    uint16_t const FCF = FRAMECTRL_PANIDCOMP |
 	                         FRAMECTRL_DESTADDRMODE_SHORT |
 	                         FRAMECTRL_SRCADDRMODE_SHORT |
-                           FRAMECTRL_FRAMETYPE_DATA |
-                           (ackRequired? FRAMECTRL_ACKREQUEST : 0);
+                           FRAMECTRL_FRAMETYPE_DATA;
 
-      // create message-id
-      uint16_t messageID = Random::nextUInt16();
-
-		  ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-		  {
-        uint16_t wpos = MEM_TXN_FIFO;
+      uint16_t wpos = MEM_TXN_FIFO;
       
-        // write header length        
-        writeLongAddress(wpos++, hdrlen);
+      // write header length        
+      writeLongAddress(wpos++, hdrlen);
       
-        // write frame length
-        writeLongAddress(wpos++, framelen);
+      // write frame length
+      writeLongAddress(wpos++, framelen);
       
-        // write Frame control field	    
-		    writeLongAddress(wpos++, FCF & 0xFF); // low byte      
-		    writeLongAddress(wpos++, (FCF >> 8) & 0xFF);   // high byte      
+      // write Frame control field	    
+		  writeLongAddress(wpos++, FCF & 0xFF); // low byte      
+		  writeLongAddress(wpos++, (FCF >> 8) & 0xFF);   // high byte      
 		  
-        // Sequence number
-        // 0..1 (2 bit) : TTL (time to live), values 0..3
-        // 2..4 (3 bit) : command, values 0..7
-        // 5    (1 bit) : 1 = requested soft ack
-        // 6..7 (2 bit) : sequence number 0..3
-        uint8_t const seqnum = TTL | ((uint8_t)command << 2) | (m_seqNumber << 6) | (softack? 1 << 5 : 0);
-        writeLongAddress(wpos++, seqnum);
-        m_seqNumber = (m_seqNumber == 3? 0: m_seqNumber + 1);
+      // Sequence number
+      // 0..1 (2 bit) : TTL (time to live), values 0..3
+      // 2..4 (3 bit) : command, values 0..7
+      // 5    (1 bit) : 1 = requested soft ack
+      // 6..7 (2 bit) : free
+      uint8_t const seqnum = TTL | ((uint8_t)command << 2) | (ackType == ACK_SOFTWARE? 1 << 5 : 0);
+      writeLongAddress(wpos++, seqnum);
       
-        // Destination PANID
-	      writeLongAddress(wpos++, m_PANID & 0xFF); // low byte      
-	      writeLongAddress(wpos++, (m_PANID >> 8) & 0xFF); // high byte      
+      // Destination PANID
+	    writeLongAddress(wpos++, m_PANID & 0xFF); // low byte      
+	    writeLongAddress(wpos++, (m_PANID >> 8) & 0xFF); // high byte      
       
-        // Destination address
-        writeLongAddress(wpos++, frame->destAddress);
-        writeLongAddress(wpos++, 0xFF);
+      // Destination address (broadcast)
+      writeLongAddress(wpos++, 0xFF);
+      writeLongAddress(wpos++, 0xFF);
       
-        // Source address
-        writeLongAddress(wpos++, frame->srcAddress);
-        writeLongAddress(wpos++, 0xFF);
+      // Source address
+      writeLongAddress(wpos++, frame->srcAddress);
+      writeLongAddress(wpos++, 0xFF);
 		
-				// command extra data
-        if (command != CMD_NONE)
-        {
-          for (uint8_t i = 0; i != CMDDATASIZE; ++i)
-            writeLongAddress(wpos++, (i < extraDataLen? extraData[i] : 0));          
-        }
+			// command extra data
+      if (command != CMD_NONE)
+      {
+        for (uint8_t i = 0; i != CMDDATASIZE; ++i)
+          writeLongAddress(wpos++, (i < extraDataLen? extraData[i] : 0));          
+      }
 			
-        #ifdef VERBOSE
-        serial.write_P(PSTR("   command = ")); cout << (uint16_t)command << endl;
-        #endif
+      #ifdef VERBOSE
+      serial.write_P(PSTR("   command = ")); cout << (uint16_t)command << endl;
+      #endif
  
-        // write message id (16 bit)
-        writeLongAddress(wpos++, messageID & 0xFF);         // low byte
-        writeLongAddress(wpos++, (messageID >> 8) & 0xFF);  // high byte                
-        #ifdef VERBOSE
-        serial.write_P(PSTR("   mess-id = ")); cout << (uint16_t)messageID << endl;
-        #endif
+      // write actual destination
+      writeLongAddress(wpos++, frame->destAddress);
+ 
+      // write message id (16 bit)
+      writeLongAddress(wpos++, m_messageID & 0xFF);         // low byte
+      writeLongAddress(wpos++, (m_messageID >> 8) & 0xFF);  // high byte                
+      #ifdef VERBOSE
+      serial.write_P(PSTR("   mess-id = ")); cout << (uint16_t)m_messageID << endl;
+      #endif
       
-        // write Checksum (not 802.15.4 standard)
-        uint16_t const checksum = calcChecksum(frame, command, messageID);
-        writeLongAddress(wpos++, checksum & 0xFF);        // low byte
-        writeLongAddress(wpos++, (checksum >> 8) & 0xFF); // high byte
+      // write Checksum (not 802.15.4 standard)
+      uint16_t const checksum = calcChecksum(frame, command, m_messageID);
+      writeLongAddress(wpos++, checksum & 0xFF);        // low byte
+      writeLongAddress(wpos++, (checksum >> 8) & 0xFF); // high byte
 
-        #ifdef VERBOSE
-        serial.write_P(PSTR("   checksum = ")); cout << (uint16_t)checksum << endl;
-        #endif      
+      #ifdef VERBOSE
+      serial.write_P(PSTR("   checksum = ")); cout << (uint16_t)checksum << endl;
+      #endif      
         
-        // write upper protocol (not 802.15.4 standard)
-        writeLongAddress(wpos++, frame->type_length & 0xFF);        // low byte
-        writeLongAddress(wpos++, (frame->type_length >> 8) & 0xFF); // high byte
+      // write upper protocol (not 802.15.4 standard)
+      writeLongAddress(wpos++, frame->type_length & 0xFF);        // low byte
+      writeLongAddress(wpos++, (frame->type_length >> 8) & 0xFF); // high byte
 
-        // Payload
-        #ifdef VERBOSE
-        serial.write_P(PSTR("   payloadLen = ")); cout << (uint16_t)payloadlen << endl;
-        #endif
-        if (payloadlen > 0)
+      // Payload
+      #ifdef VERBOSE
+      serial.write_P(PSTR("   payloadLen = ")); cout << (uint16_t)payloadlen << endl;
+      #endif
+      if (payloadlen > 0)
+      {
+        EncodeInfo encodeInfo(m_keyz, m_keyw, seqnum);
+        DataList const* data = frame->dataList;
+        while (data != NULL)
         {
-          EncodeInfo encodeInfo(m_keyz, m_keyw, seqnum);
-          DataList const* data = frame->dataList;
-          while (data != NULL)
+          uint8_t const* bw = (uint8_t const*)data->data;
+          for (uint8_t i = 0; i != data->length; ++i)
           {
-            uint8_t const* bw = (uint8_t const*)data->data;
-            for (uint8_t i = 0; i != data->length; ++i)
-            {
-              #ifdef VERBOSE
-              cout << (uint16_t)*bw << ' ';
-              #endif
-              writeLongAddress(wpos++, encodeByte(encodeInfo, *bw++));
-            }            
-            data = data->next;
-          }        
-          #ifdef VERBOSE
-          cout << endl;
-          #endif
-        }          
+            #ifdef VERBOSE
+            cout << (uint16_t)*bw << ' ';
+            #endif
+            writeLongAddress(wpos++, encodeByte(encodeInfo, *bw++));
+          }            
+          data = data->next;
+        }        
+        #ifdef VERBOSE
+        cout << endl;
+        #endif
+      }          
 
-        // Send
-        setReg(REG_TXNCON, BIT_TXNTRIG |            // TX trigger
-               (ackRequired? BIT_TXNACKREQ : 0));   // ack required?
-		  } // end of Atomic block	    
-	  
+      // Send
+      setReg(REG_TXNCON, BIT_TXNTRIG);
 
       // Check transmission status
       for (uint8_t i = 0; i != MAXSENDTRIES; ++i)
       {
         TimeOut timeOut(15);  // wait up to 15ms
         while (!m_frameSent && !timeOut)
-          ;
+          checkInterrupt();
         uint8_t txstat = getReg_noIRQ(REG_TXSTAT);
         m_frameSent    = false;
 			  if ((txstat & BIT_TXNSTAT) == 0)
         {
-          if (ackType == ACK_SOFTWARE && !recvSoftACK(messageID))
+          if (ackType == ACK_SOFTWARE && !recvSoftACK(m_messageID))
           {
             // no soft-ack, retry
             setReg_noIRQ(REG_TXNCON, BIT_TXNTRIG);
@@ -1226,113 +981,16 @@ cout << "no soft-ack, retry" << endl;
     }
 
 
-    // the same of directSendFrame but uses a gateway on fail
-    // warning: non-gateway search related frames can be lost during gateway search
     SendResult sendFrame(LinkLayerSendFrame const* frame)
     {
       MRFSendFrame directFrame(frame->srcAddress[0], frame->destAddress[0], frame->type_length, frame->dataList);
-      
-      #ifdef MRFFORCEGATEWAY      
-        SendResult r = SendFail;
-        if (directFrame.destAddress == 0xFF)
-          r = directSendFrame(&directFrame, ACK_NONE);
-      #else
-        // first tries to send directly
-        SendResult r = directSendFrame(&directFrame, ACK_SOFTWARE);
-      #endif
-
-      // fail, use a gateway
-      if (r != SendOK && directFrame.destAddress != 0xFF) 
-      {
-        #ifdef VERBOSE
-        serial.write_P(PSTR("using gateway ")); cout << endl;;
-        #endif
-
-        // search for a gateway in the cache
-        m_discoveredPath = getDiscoveredCache(directFrame.destAddress);
-        //cout << "cache=" << (uint16_t)m_discoveredPath << endl;
-
-        if (m_discoveredPath == 0xFF)
-        {
-          // search for a gateway for the destination address, using commands
-          sendCMD_DISCOVERYPATH(directFrame.destAddress);
-          m_waitingCMD = CMD_DISCOVERYPATHREPLY;
-          TimeOut timeOut(MINGATEWAYWAITTIME);
-          while (!timeOut)
-            recvFrame();  // just to process CMD_DISCOVERYPATHREPLY
-          timeOut.reset(MAXGATEWAYWAITTIME);
-          while (!timeOut && m_discoveredPath == 0xFF)
-            recvFrame();  // just to process CMD_DISCOVERYPATHREPLY
-          m_waitingCMD = CMD_NONE;
-        }          
-
-        #ifdef VERBOSE
-        serial.write_P(PSTR("found: ")); cout << (uint16_t)m_discoveredPath << endl;
-        #endif
-
-        if (m_discoveredPath != 0xFF)
-        {
-          // found a path, forward frame using it
-          #ifdef VERBOSE
-          serial.write_P(PSTR("gateway ")); cout << (uint16_t)m_discoveredPath << endl;
-          #endif
-          addDiscoveredCache(DiscoveredCacheItem(directFrame.destAddress, m_discoveredPath));
-          removeExpiredItem();
-          MRFSendFrame newFrame(m_address[0], m_discoveredPath, frame->type_length, frame->dataList);
-          return directSendFrame(&newFrame, ACK_SOFTWARE, CMD_GATEWAY_FORWARD, &directFrame.destAddress, 1);
-        }
-      }
-      
-      return r;
+      return directSendFrame(&directFrame, ACK_SOFTWARE);
     }
     
     
-    void addDiscoveredCache(DiscoveredCacheItem const& item)
-    {
-      for (uint8_t i = 0; i != m_discoveredCache.size(); ++i)
-      {
-        if (m_discoveredCache[i] == item)
-          return; // already exists
-        else if (m_discoveredCache[i].destination == item.destination || m_discoveredCache[i].gateway == item.gateway)
-        {
-          // update entry
-          m_discoveredCache[i] = item;
-          return;
-        }
-      }
-      m_discoveredCache.add(item);
-    }
-    
-    void removeExpiredItem()
-    {      
-      for (uint8_t i = 0; i != m_discoveredCache.size(); ++i)
-        if (m_discoveredCache[i].age == 0)
-        {
-          m_discoveredCache.del(i);
-          //cout << "del " << (uint16_t)i << endl;
-          return; // remove one at the time
-        }
-    }
-    
-    
-    uint8_t getDiscoveredCache(uint8_t destination)
-    {
-      for (uint8_t i = 0; i != m_discoveredCache.size(); ++i)
-        if (m_discoveredCache[i].destination == destination)
-        {
-          if (m_discoveredCache[i].age > 0)
-            --m_discoveredCache[i].age;
-          //cout << "age=" << (uint16_t)m_discoveredCache[i].age << endl;
-          return m_discoveredCache[i].gateway;
-        }
-      return 0xFF;  // means: not found!
-    }
-    
-    
-    // to execute code at startup of atomic-block and at cleanup
     struct StopAndRestartRX
     {
-      StopAndRestartRX(MRF24J40_PHY_MAC& mac_) : mac(mac_)
+      StopAndRestartRX(MRF24J40& mac_) : mac(mac_)
       {
         // stop receiving packets (suggested in a note of "3.11.1 RECEPTION MODES")
         mac.setReg(REG_BBREG1, BIT_RXDECINV);
@@ -1344,12 +1002,13 @@ cout << "no soft-ack, retry" << endl;
         // restart receiving packets (suggested in a note of "3.11.1 RECEPTION MODES")
         mac.setReg(REG_BBREG1, 0);
       }
-      MRF24J40_PHY_MAC& mac;
+      MRF24J40& mac;
     };
     
     
     void recvFrame()
     {
+      checkInterrupt();
       if (!m_frameReceived)
         return;
 
@@ -1359,182 +1018,179 @@ cout << "no soft-ack, retry" << endl;
 
       uint16_t checksum = 0;
 
-      MRFRcvFrame frame;
-      SimpleBuffer<CMDExtraData> extra;  // container for "extra" data
-      SimpleBuffer<uint8_t> payloadBuffer;  // container for payload
+      MRFRcvFrame                frame;
+      SimpleBuffer<CMDExtraData> extra;          // container for "extra" data
+      SimpleBuffer<uint8_t>      payloadBuffer;  // container for payload
       
       uint8_t TTL        = 0;
       CMD command        = CMD_NONE;
+      
       uint16_t messageID = 0;
       bool softack       = false;
       
-      ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-	    {
+      // stop receiving packets (suggested in a note of "3.11.1 RECEPTION MODES")
+      StopAndRestartRX stopAndStartRX(*this);
 
-        // to execute code at startup of atomic-block and at cleanup
-        StopAndRestartRX stopAndStartRX(*this);
+      m_frameReceived = false;
 
-        m_frameReceived = false;
-
-        for (uint8_t tries = 0; ; ++tries)
-        {          
+      for (uint8_t tries = 0; ; ++tries)
+      {          
       
-          uint16_t rpos = MEM_RX_FIFO;
+        uint16_t rpos = MEM_RX_FIFO;
       	  
-          // Frame Length
-          uint8_t frameLength = readLongAddress(rpos++);        
+        // Frame Length
+        uint8_t frameLength = readLongAddress(rpos++);        
 
-          // Frame Control Field
-	        uint16_t FCF = readLongAddress(rpos) | ((uint16_t)readLongAddress(rpos+1) << 8);
-		      rpos += 2;        
-          if ((FCF & FRAMECTRL_SECENABLED) || ((FCF & FRAMECTRL_SRCADDRMODE_MASK) == FRAMECTRL_SRCADDRMODE_LONG) || ((FCF & FRAMECTRL_DESTADDRMODE_MASK) == FRAMECTRL_DESTADDRMODE_LONG))
-            return; // we don't use security and long addresses
+        // Frame Control Field
+	      uint16_t FCF = readLongAddress(rpos) | ((uint16_t)readLongAddress(rpos+1) << 8);
+		    rpos += 2;        
+        if ((FCF & FRAMECTRL_SECENABLED) || ((FCF & FRAMECTRL_SRCADDRMODE_MASK) == FRAMECTRL_SRCADDRMODE_LONG) || ((FCF & FRAMECTRL_DESTADDRMODE_MASK) == FRAMECTRL_DESTADDRMODE_LONG))
+          return; // we don't use security and long addresses
 
-          // is data frame?
-          if ((FCF & 7) != FRAMECTRL_FRAMETYPE_DATA)
-  		      return; // not data frame, discard
+        // is data frame?
+        if ((FCF & 7) != FRAMECTRL_FRAMETYPE_DATA)
+  		    return; // not data frame, discard
 
-          // Sequence number
-          // 0..1 (2 bit) : TTL (time to live), values 0..3
-          // 2..4 (3 bit) : command, values 0..7
-          // 5    (1 bit) : 1 = requested software ack
-          // 6..7 (2 bit) : sequence number 0..3
-          uint8_t const seqnum = readLongAddress(rpos++);
-          TTL     = seqnum & 0b11;
-          command = (CMD)((seqnum >> 2) & 0b111);
-          softack = (seqnum & (1 << 5)) != 0;
-          if (m_waitingCMD != CMD_NONE && command != m_waitingCMD)
-            return; // we are waiting for a specific command (to avoid re-entrant code)
+        // Sequence number
+        // 0..1 (2 bit) : TTL (time to live), values 0..3
+        // 2..4 (3 bit) : command, values 0..7
+        // 5    (1 bit) : 1 = requested software ack
+        // 6..7 (2 bit) : free
+        uint8_t const seqnum = readLongAddress(rpos++);
+        TTL     = seqnum & 0b11;
+        command = (CMD)((seqnum >> 2) & 0b111);
+        softack = (seqnum & (1 << 5)) != 0;
       
-          // Destination PANID (ignore)
-	        rpos += 2;
+        // Destination PANID (ignore)
+	      rpos += 2;
       
-          // Destination address
-          frame.destAddress = readLongAddress(rpos);
-          rpos += 2;
+        // Destination address (ignore, always broadcast)
+        rpos += 2;
       
-          // Source address
-          frame.srcAddress = readLongAddress(rpos);
-          rpos += 2;
+        // Source address
+        frame.srcAddress = readLongAddress(rpos);
+        rpos += 2;
 
-          if (frame.srcAddress == m_address[0])
-            return; // from my-self (maybe broadcast replication)
+        if (frame.srcAddress == m_address[0])
+          return; // from my-self (maybe broadcast replication)
 
-          if (command != CMD_NONE)
-          {
-            // this is a command, read extra structure
-            extra.reset(1);
-            extra.get()->command = command;
+        if (command != CMD_NONE)
+        {
+          // this is a command, read extra structure
+          extra.reset(1);
+          extra.get()->command = command;
 
-            for (uint8_t i = 0; i != CMDDATASIZE; ++i)
-              extra.get()->extraData[i] = readLongAddress(rpos++);            
-          }
+          for (uint8_t i = 0; i != CMDDATASIZE; ++i)
+            extra.get()->extraData[i] = readLongAddress(rpos++);            
+        }
         
-          // read message-id
-          messageID = readLongAddress(rpos) | ((uint16_t)readLongAddress(rpos + 1) << 8);
-          rpos += 2;        
+        // actual destination
+        frame.destAddress = readLongAddress(rpos++);
+
+        // read message-id
+        messageID = readLongAddress(rpos) | ((uint16_t)readLongAddress(rpos + 1) << 8);
+        rpos += 2;        
         
-          // read non-standard Checksum
-          checksum = readLongAddress(rpos) | ((uint16_t)readLongAddress(rpos + 1) << 8);
-          rpos += 2;        
+        // read non-standard Checksum
+        checksum = readLongAddress(rpos) | ((uint16_t)readLongAddress(rpos + 1) << 8);
+        rpos += 2;        
         
-          // read non-standard protocol (type_length)
-          frame.type_length = readLongAddress(rpos) | ((uint16_t)readLongAddress(rpos + 1) << 8);
-          rpos += 2;
+        // read non-standard protocol (type_length)
+        frame.type_length = readLongAddress(rpos) | ((uint16_t)readLongAddress(rpos + 1) << 8);
+        rpos += 2;
 
 
+        #ifdef VERBOSE
+        serial.write_P(PSTR("  source          = ")); cout << (uint16_t)frame.srcAddress << endl;
+        serial.write_P(PSTR("  dest            = ")); cout << (uint16_t)frame.destAddress << endl;
+        serial.write_P(PSTR("  protocol        = ")); cout << frame.type_length << endl;
+        serial.write_P(PSTR("  command         = ")); cout << (uint16_t)command << endl;
+        serial.write_P(PSTR("  mess-id         = ")); cout << (uint16_t)messageID << endl;
+        //serial.write_P(PSTR("  frameLength     = ")); cout << (uint16_t)frameLength << endl;
+        //serial.write_P(PSTR("  FCF             = ")); cout << FCF << endl;
+        //serial.write_P(PSTR("  FCF.ACKREQUEST  = ")); cout << (ackRequired?'T':'F') << endl;
+        #endif
+
+
+        // Payload
+		    // subtract:
+		    //    11 = FCF(2) + SEQ(1) + PANID(2) + MESSAGEID(2) + NON_STD_CHECKSUM(2) + NON_STD_PROTOCOL(2)
+		    //    if command:
+        //      CMDDATA  = extra command data
+		    //    short address:
+		    //      4 = SHORT_DEST_ADDR(2) + SHORT_SRC_ADDR(2)
+		    //    2 = CRC(2)
+	      frame.dataLength = frameLength - 11 - 4 - (command != CMD_NONE? CMDDATASIZE : 0) - 2;
+        if (frame.dataLength > MAXPAYLOAD || getFreeMem() - 200 < frame.dataLength)
+        {
           #ifdef VERBOSE
-          serial.write_P(PSTR("  source          = ")); cout << (uint16_t)frame.srcAddress << endl;
-          serial.write_P(PSTR("  dest            = ")); cout << (uint16_t)frame.destAddress << endl;
-          serial.write_P(PSTR("  protocol        = ")); cout << frame.type_length << endl;
-          serial.write_P(PSTR("  command         = ")); cout << (uint16_t)command << endl;
-          serial.write_P(PSTR("  mess-id         = ")); cout << (uint16_t)messageID << endl;
-          //serial.write_P(PSTR("  frameLength     = ")); cout << (uint16_t)frameLength << endl;
-          //serial.write_P(PSTR("  FCF             = ")); cout << FCF << endl;
-          //serial.write_P(PSTR("  FCF.ACKREQUEST  = ")); cout << (ackRequired?'T':'F') << endl;
+          serial.write_P(PSTR("  too large, discard")); cout << endl;
           #endif
-
-
-          // Payload
-		      // subtract:
-		      //    11 = FCF(2) + SEQ(1) + PANID(2) + MESSAGEID(2) + NON_STD_CHECKSUM(2) + NON_STD_PROTOCOL(2)
-		      //    if command:
-          //      CMDDATA  = extra command data
-		      //    short address:
-		      //      4 = SHORT_DEST_ADDR(2) + SHORT_SRC_ADDR(2)
-		      //    2 = CRC(2)
-	        frame.dataLength = frameLength - 11 - 4 - (command != CMD_NONE? CMDDATASIZE : 0) - 2;
-          if (frame.dataLength > MAXPAYLOAD || getFreeMem() - 200 < frame.dataLength)
-          {
-            #ifdef VERBOSE
-            serial.write_P(PSTR("  too large, discard")); cout << endl;
-            #endif
-            return; // too large, discard
-          }            
-          payloadBuffer.reset(frame.dataLength);
-          frame.payload = payloadBuffer.get();
+          return; // too large, discard
+        }            
+        payloadBuffer.reset(frame.dataLength);
+        frame.payload = payloadBuffer.get();
+        #ifdef VERBOSE
+        serial.write_P(PSTR("  mem      = ")); cout << (uint16_t)getFreeMem() << endl;
+        serial.write_P(PSTR("  payloadLen = ")); cout << (uint16_t)frame.dataLength << endl;
+        #endif
+        EncodeInfo encodeInfo(m_keyz, m_keyw, seqnum);
+        for (uint8_t i = 0; i != frame.dataLength; ++i)
+        {
+          frame.payload[i] = encodeByte(encodeInfo, readLongAddress(rpos++));
           #ifdef VERBOSE
-          serial.write_P(PSTR("  mem      = ")); cout << (uint16_t)getFreeMem() << endl;
-          serial.write_P(PSTR("  payloadLen = ")); cout << (uint16_t)frame.dataLength << endl;
+          cout << frame.payload[i] << ' ';
           #endif
-          EncodeInfo encodeInfo(m_keyz, m_keyw, seqnum);
-          for (uint8_t i = 0; i != frame.dataLength; ++i)
-          {
-            frame.payload[i] = encodeByte(encodeInfo, readLongAddress(rpos++));
-            #ifdef VERBOSE
-            cout << frame.payload[i] << ' ';
-            #endif
-          }          
-          #ifdef VERBOSE
-          cout << endl;
-          #endif
+        }          
+        #ifdef VERBOSE
+        cout << endl;
+        #endif
           
-          // CRC (ignore)
-	        rpos += 2;
+        // CRC (ignore)
+	      rpos += 2;
       
-          if (extra.get())
+        if (extra.get())
+        {
+          // LQI
+          extra.get()->LQI = readLongAddress(rpos++);        
+          // RSSI
+          extra.get()->RSSI = readLongAddress(rpos++);          
+        }
+        
+        uint16_t const chk = calcChecksum(&frame, extra.get(), messageID);
+        if (chk != checksum)
+        {
+          if (tries == 2)
           {
-            // LQI
-            extra.get()->LQI = readLongAddress(rpos++);        
-            // RSSI
-            extra.get()->RSSI = readLongAddress(rpos++);          
-          }
-          uint16_t const chk = calcChecksum(&frame, extra.get(), messageID);
-          if (chk != checksum)
-          {
-            if (tries == 2)
-            {
-              #ifdef VERBOSE
-              serial.write_P(PSTR("  Wrong checksum!")); cout << chk << '-' << checksum << endl;
-              #endif
-              //cout << "wrong check" << endl;
-              //serial.write_P(PSTR("  source          = ")); cout << (uint16_t)frame.srcAddress << endl;
-              //serial.write_P(PSTR("  dest            = ")); cout << (uint16_t)frame.destAddress << endl;
-              //serial.write_P(PSTR("  protocol        = ")); cout << frame.type_length << endl;
-              //serial.write_P(PSTR("  command         = ")); cout << (uint16_t)command << endl;
-              //serial.write_P(PSTR("  seqnum          = ")); cout << (uint16_t)command << endl;
-              //for (uint16_t x=MEM_RX_FIFO; x < MEM_RX_FIFO+127; ++x)
-                //cout << readLongAddress(x) << ' ';
-              //while (1);  // todo: test
-              return; // discard, wrong checksum
-            }  
+            #ifdef VERBOSE
+            serial.write_P(PSTR("  Wrong checksum!")); cout << chk << '-' << checksum << endl;
+            #endif
+            //cout << "wrong check" << endl;
+            //serial.write_P(PSTR("  source          = ")); cout << (uint16_t)frame.srcAddress << endl;
+            //serial.write_P(PSTR("  dest            = ")); cout << (uint16_t)frame.destAddress << endl;
+            //serial.write_P(PSTR("  protocol        = ")); cout << frame.type_length << endl;
+            //serial.write_P(PSTR("  command         = ")); cout << (uint16_t)command << endl;
+            //serial.write_P(PSTR("  seqnum          = ")); cout << (uint16_t)command << endl;
+            //for (uint16_t x=MEM_RX_FIFO; x < MEM_RX_FIFO+127; ++x)
+              //cout << readLongAddress(x) << ' ';
+            //while (1);  // todo: test
+            return; // discard, wrong checksum
           }  
-          else
-            break;            
-          #ifdef VERBOSE
-          serial.write_P(PSTR("  Wrong checksum, retry!")); cout << chk << '-' << checksum << endl;
-          #endif
-        }  // end of tries loop               
+        }  
+        else
+          break;            
+        #ifdef VERBOSE
+        serial.write_P(PSTR("  Wrong checksum, retry!")); cout << chk << '-' << checksum << endl;
+        #endif
+      }  // end of tries loop               
     
-			}		  // end of atomic block
-
       // send software ack
-      if (softack)
+      if (frame.destAddress == m_address[0] && softack)
         sendSoftACK(frame.destAddress, frame.srcAddress, messageID);
 
       // resend broadcast messages (if TTL > 0). 
-      // This is the way broadcast message uses instead of discovery path (used only for non-broadcast messages).
-      if (frame.destAddress == 0xFF && TTL > 0 && command != CMD_DISCOVERYPATH)
+      // This is the way broadcast message uses to global flooding
+      if (frame.destAddress == 0xFF && TTL > 0)
       {
         delayMicroseconds( 500 + Random::nextUInt16(0, 5000) ); // wait random time 500..5000us
         DataList data(NULL, frame.payload, frame.dataLength);
@@ -1542,7 +1198,7 @@ cout << "no soft-ack, retry" << endl;
         directSendFrame(&outFrame, ACK_NONE, command, (extra.get()? extra.get()->extraData : NULL), (extra.get()? CMDDATASIZE : 0), TTL - 1);
       }
 
-      if (extra.get() && processCMD(&frame, extra.get()))
+      if ((frame.destAddress == m_address[0] || frame.destAddress == 0xFF) && extra.get() && processCMD(&frame, extra.get()))
       {
         #ifdef VERBOSE
         serial.write_P(PSTR("  processCMD: true ")); cout << endl;
@@ -1550,18 +1206,21 @@ cout << "no soft-ack, retry" << endl;
         return; // command processed
       }
       
-      RcvFrame rframe(LinkAddress(frame.srcAddress, m_address[1], m_address[2], m_address[3], m_address[4], m_address[5]),
-                      LinkAddress(frame.destAddress, m_address[1], m_address[2], m_address[3], m_address[4], m_address[5]),
-                      frame.type_length,
-                      frame.payload,
-                      frame.dataLength); 
-      for (uint8_t i = 0; i != m_listeners.size(); ++i)
+      if (frame.destAddress == m_address[0])
       {
-        //cout << "listener " << (uint16_t)i << endl;                       
-        rframe.readReset();
-        if (m_listeners[i]->processLinkLayerFrame(&rframe))
-          break; // message processed
-      }      
+        RcvFrame rframe(LinkAddress(frame.srcAddress, m_address[1], m_address[2], m_address[3], m_address[4], m_address[5]),
+                        LinkAddress(frame.destAddress, m_address[1], m_address[2], m_address[3], m_address[4], m_address[5]),
+                        frame.type_length,
+                        frame.payload,
+                        frame.dataLength); 
+        for (uint8_t i = 0; i != m_listeners.size(); ++i)
+        {
+          //cout << "listener " << (uint16_t)i << endl;                       
+          rframe.readReset();
+          if (m_listeners[i]->processLinkLayerFrame(&rframe))
+            break; // message processed
+        }      
+      }        
     }
     
 
@@ -1572,60 +1231,65 @@ cout << "no soft-ack, retry" << endl;
     
     void sendSoftACK(uint8_t srcAddress, uint8_t dstAddress, uint16_t messageID)
     {
+      ++m_messageID;
+      
       // 2 = FCF    1 = sequence number    2 = dest PANID    2 = destination address    2 = source address
       uint8_t const hdrlen = 2 + 1 + 2 + 2 + 2;
       
-      // +2 is for message-id
-      uint8_t const framelen = hdrlen + 2;
+      // +2 is for message-id, +2 reply message-id, +1 is for actual destination
+      uint8_t const framelen = hdrlen + 2 + 2 + 1;
 
       // calculate FCF (frame control field)
       uint16_t const FCF = FRAMECTRL_PANIDCOMP |
                            FRAMECTRL_DESTADDRMODE_SHORT |
                            FRAMECTRL_SRCADDRMODE_SHORT |
-                           FRAMECTRL_FRAMETYPE_CMD;  // << this is a command!
+                           FRAMECTRL_FRAMETYPE_CMD;   // MRF command frame = ACK message
 
-      ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-      {
-        uint16_t wpos = MEM_TXN_FIFO;
+      uint16_t wpos = MEM_TXN_FIFO;
         
-        // write header length
-        writeLongAddress(wpos++, hdrlen);
+      // write header length
+      writeLongAddress(wpos++, hdrlen);
         
-        // write frame length
-        writeLongAddress(wpos++, framelen);
+      // write frame length
+      writeLongAddress(wpos++, framelen);
         
-        // write Frame control field
-        writeLongAddress(wpos++, FCF & 0xFF); // low byte
-        writeLongAddress(wpos++, (FCF >> 8) & 0xFF);   // high byte
+      // write Frame control field
+      writeLongAddress(wpos++, FCF & 0xFF);          // low byte
+      writeLongAddress(wpos++, (FCF >> 8) & 0xFF);   // high byte
         
-        // Sequence number
-        writeLongAddress(wpos++, 0);
+      // Sequence number
+      writeLongAddress(wpos++, 0);
         
-        // Destination PANID
-        writeLongAddress(wpos++, m_PANID & 0xFF); // low byte
-        writeLongAddress(wpos++, (m_PANID >> 8) & 0xFF); // high byte
+      // Destination PANID
+      writeLongAddress(wpos++, m_PANID & 0xFF);        // low byte
+      writeLongAddress(wpos++, (m_PANID >> 8) & 0xFF); // high byte
         
-        // Destination address
-        writeLongAddress(wpos++, dstAddress);
-        writeLongAddress(wpos++, 0xFF);
+      // Destination address (broadcast)
+      writeLongAddress(wpos++, 0xFF);
+      writeLongAddress(wpos++, 0xFF);
         
-        // Source address
-        writeLongAddress(wpos++, srcAddress);
-        writeLongAddress(wpos++, 0xFF);
+      // Source address
+      writeLongAddress(wpos++, srcAddress);
+      writeLongAddress(wpos++, 0xFF);
+
+      // write actual destination
+      writeLongAddress(wpos++, dstAddress);
         
-        // write message id (16 bit)
-        writeLongAddress(wpos++, messageID & 0xFF);         // low byte
-        writeLongAddress(wpos++, (messageID >> 8) & 0xFF);  // high byte
+      // write this message id (16 bit)
+      writeLongAddress(wpos++, m_messageID & 0xFF);         // low byte
+      writeLongAddress(wpos++, (m_messageID >> 8) & 0xFF);  // high byte
+
+      // write reply message id (16 bit)
+      writeLongAddress(wpos++, messageID & 0xFF);         // low byte
+      writeLongAddress(wpos++, (messageID >> 8) & 0xFF);  // high byte
         
-        // Send
-        setReg(REG_TXNCON, BIT_TXNTRIG);            
-      } // end of Atomic block
-      
+      // Send
+      setReg(REG_TXNCON, BIT_TXNTRIG);                  
 
       // Check transmission status
       TimeOut timeOut(15);  // wait up to 15ms
       while (!m_frameSent && !timeOut)
-        ;
+        checkInterrupt();;
       getReg_noIRQ(REG_TXSTAT);
       m_frameSent    = false;
     }
@@ -1637,57 +1301,57 @@ cout << "no soft-ack, retry" << endl;
       TimeOut timeOut(MAXACKTIMEOUT);
       while (!timeOut)
       {
+        checkInterrupt();
         if (!m_frameReceived)
           continue;
 
-....credo non si possa usare "continue" o "break" all'interno di atomic_block
-....cambia tutti gli atomic block in una classe C++
-        ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-        {
+        // to execute code at startup of atomic-block and at cleanup
+        StopAndRestartRX stopAndStartRX(*this);
 
-          // to execute code at startup of atomic-block and at cleanup
-          StopAndRestartRX stopAndStartRX(*this);
+        m_frameReceived = false;
 
-          m_frameReceived = false;
-
-          uint16_t rpos = MEM_RX_FIFO;
+        uint16_t rpos = MEM_RX_FIFO;
           
-          // Frame Length
-          readLongAddress(rpos++);
+        // Frame Length
+        readLongAddress(rpos++);
 
-          // Frame Control Field
-          uint16_t FCF = readLongAddress(rpos) | ((uint16_t)readLongAddress(rpos+1) << 8);
-          rpos += 2;
-          if ((FCF & FRAMECTRL_SECENABLED) || ((FCF & FRAMECTRL_SRCADDRMODE_MASK) == FRAMECTRL_SRCADDRMODE_LONG) || ((FCF & FRAMECTRL_DESTADDRMODE_MASK) == FRAMECTRL_DESTADDRMODE_LONG))
-            continue; // we don't use security and long addresses
+        // Frame Control Field
+        uint16_t FCF = readLongAddress(rpos) | ((uint16_t)readLongAddress(rpos + 1) << 8);
+        rpos += 2;
+        if ((FCF & FRAMECTRL_SECENABLED) || ((FCF & FRAMECTRL_SRCADDRMODE_MASK) == FRAMECTRL_SRCADDRMODE_LONG) || ((FCF & FRAMECTRL_DESTADDRMODE_MASK) == FRAMECTRL_DESTADDRMODE_LONG))
+          continue; // we don't use security and long addresses
 
-          // is command frame?
-          if ((FCF & 7) != FRAMECTRL_FRAMETYPE_CMD)
-            continue; // not data frame, discard
+        // is command frame?
+        if ((FCF & 7) != FRAMECTRL_FRAMETYPE_CMD)
+          continue; // not data frame, discard
 
-          // Sequence number
-          readLongAddress(rpos++);
+        // Sequence number
+        ++rpos;
 
-          // Destination PANID (ignore)
-          rpos += 2;
+        // Destination PANID (ignore)
+        rpos += 2;
           
-          // Destination address
-          readLongAddress(rpos);
-          rpos += 2;
+        // Destination address
+        rpos += 2;
           
-          // Source address
-          uint8_t const srcAddress = readLongAddress(rpos);
-          rpos += 2;
+        // Source address
+        uint8_t const srcAddress = readLongAddress(rpos);
+        rpos += 2;
 
-          if (srcAddress == m_address[0])
-            continue; // from my-self (maybe broadcast replication)
+        if (srcAddress == m_address[0])
+          continue; // from my-self (maybe broadcast replication)
 
-          // read message-id
-          uint16_t const rmessageID = readLongAddress(rpos) | ((uint16_t)readLongAddress(rpos + 1) << 8);
-          rpos += 2;
+        // actual destination
+        uint8_t const destAddress = readLongAddress(rpos++);
+
+        // ACK message id (ignore)
+        rpos += 2;
+
+        // read message-id
+        uint16_t const rmessageID = readLongAddress(rpos) | ((uint16_t)readLongAddress(rpos + 1) << 8);
+        rpos += 2;
           
-        }		  // end of atomic block
-        if (rmessageID == messageID)
+        if (rmessageID == messageID && destAddress == m_address[0])
           return true;
       }        
       return false;
@@ -1707,6 +1371,7 @@ cout << "no soft-ack, retry" << endl;
       checksum += messageID;
       return checksum;
     }
+    
     
     uint16_t calcChecksum(MRFSendFrame const* frame, CMD command, uint16_t messageID)
     {
@@ -1747,6 +1412,7 @@ cout << "no soft-ack, retry" << endl;
       }
     }
 
+
     struct EncodeInfo
     {
       uint32_t z;
@@ -1763,6 +1429,7 @@ cout << "no soft-ack, retry" << endl;
       {        
       }
     };
+    
     
     uint8_t encodeByte(EncodeInfo& encodeInfo, uint8_t data)
     {
@@ -1788,10 +1455,8 @@ cout << "no soft-ack, retry" << endl;
 	
 	  void setReg_noIRQ(uint16_t address, uint8_t value)
 	  {
-		  ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-		  {
-			  setReg(address, value);
-		  }			  
+      // todo: locking!
+  	  setReg(address, value);
 	  }		  
     
     
@@ -1803,11 +1468,8 @@ cout << "no soft-ack, retry" << endl;
 	
 	  uint8_t getReg_noIRQ(uint16_t address)
 	  {
-		  ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-		  {
-			  return getReg(address);
-		  }			  
-		  return 0; // avoid compiler warning
+      // todo: locking!
+  	  return getReg(address);
 	  }		  
     
 
@@ -1857,7 +1519,6 @@ cout << "no soft-ack, retry" << endl;
 
     // configuration
     HardwareSPIMaster* m_spi;
-	  Pin const*         m_interruptPin;
 	  Channel            m_channel;
     DeviceType         m_deviceType;
     uint16_t           m_PANID;
@@ -1871,13 +1532,7 @@ cout << "no soft-ack, retry" << endl;
     bool volatile m_available;	  
 	  bool volatile m_frameSent;
     bool volatile m_frameReceived;
-    uint8_t       m_discoveredPath;         // best gateway
-    uint8_t       m_discoveredPathLQI;      // LQI between best gateway and destination
-    uint8_t       m_discoveredGatewayLQI;   // LQI between me and best gateway to destination
-    uint8_t       m_seqNumber;
-    CMD           m_waitingCMD;
-    CircularBuffer<DiscoveredCacheItem, DISCOVEREDCACHESIZE> m_discoveredCache;
-	    
+    uint16_t      m_messageID;
   };
   
   
