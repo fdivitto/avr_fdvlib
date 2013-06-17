@@ -818,10 +818,24 @@ namespace fdv
         if ( ((b >> 4) & 0x0F) != 4)
           return false; // unsupported IP version
         uint16_t headerLength = static_cast<uint16_t>(b & 0x0F) * 4;  // header length in bytes
+        if (headerLength < 20 || headerLength > frame->dataLength)  // fdv1
+        {
+          #ifdef TCPVERBOSE
+          serial.write_P(PSTR("Protocol_IP, invalid headerLength")); cout << endl;
+          #endif
+          return false; // invalid headerLength                   
+        }
         // TOS (bypass)
         frame->readByte();
         // Total Length
         uint16_t totalLength = frame->readWord();
+        if (totalLength < headerLength || totalLength > frame->dataLength)  // fdv1
+        {
+          #ifdef TCPVERBOSE
+          serial.write_P(PSTR("Protocol_IP, invalid totalLength")); cout << endl;
+          #endif
+          return false; // invalid totalLength
+        }          
         // Identification (bypass)
         frame->readWord();
         // Flags (bypass) | Fragment offset (bypass)

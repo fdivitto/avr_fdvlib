@@ -395,7 +395,7 @@ namespace fdv
   
   ////////////////////////////////////////////////////////////////
   // TimeOut class
-  // ex. TimeOut(200)  <- after 200ms isTimeOut() wil return true
+  // ex. TimeOut(200)  <- after 200ms TimeOut() returns true
 
   class TimeOut
   {    
