@@ -1,4 +1,4 @@
-// 2012 by Fabrizio Di Vittorio (fdivitto@tiscali.it)
+// 2012-2013 by Fabrizio Di Vittorio (fdivitto@tiscali.it)
 
 
 #ifndef FDV_TCPIP_H_
@@ -13,6 +13,10 @@
 #include "../fdv_generic/fdv_random.h"
 #include "../fdv_generic/fdv_utility.h"
 #include "../fdv_generic/fdv_memory.h"
+
+
+
+#pragma GCC diagnostic ignored "-Wnarrowing"
 
 
 namespace fdv
@@ -938,7 +942,7 @@ namespace fdv
   class Protocol_ICMP : public Protocol_IP::IListener
   {
     
-    static uint32_t const MAXECHOREPLYTIME = 1000;
+    static uint32_t const MAXECHOREPLYTIME = 4000;
 
 
   public:

@@ -82,7 +82,7 @@ namespace fdv
       #if defined(FDV_ATMEGA1280_2560)
         ADMUX = (reference << 6) | (pin & 0b111);
       #elif defined (FDV_ATMEGA88_328)
-        ADMUX = (reference << 6) | (pin & 0b111);
+        ADMUX = ((uint8_t)reference << 6) | (pin & 0b111);
       #elif defined(FDV_ATTINY84)
         ADMUX = (reference << 6) | (pin & 0b11);
       #elif defined(FDV_ATTINY85)

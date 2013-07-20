@@ -59,6 +59,7 @@ namespace fdv
       m_onewire.select(deviceAddress);
       m_onewire.write(0x44); // "CONVERT T"
       delay_ms(pgm_read_word(&DS18B20_waitConv[resIdx])); // wait for conversion
+
       // read acquired temperature
       if (!m_onewire.reset())
         return false;
@@ -66,10 +67,10 @@ namespace fdv
       m_onewire.write(0xbe); // "READ SCRATCHPAD"
       uint8_t LSB = m_onewire.read(); // Scratchpad byte #0: Temperature LSB
       uint8_t MSB = m_onewire.read(); // Scratchpad byte #1: Temperature MSB
-      //*result = (MSB & 0x80 ? -1 : 1) * (((LSB >> 4) | ((MSB & 0x7) << 4)) + ((LSB & pgm_read_byte(&DS18B20_zeroBit[resIdx])) * 0.0625));
       *num = ((LSB >> 4) | ((MSB & 0x7) << 4)) * 16 + (LSB & pgm_read_byte(&DS18B20_zeroBit[resIdx]));
       *den = 16;
       if (MSB & 0x80) *num = -*num;
+	  
       return true;
     }
 

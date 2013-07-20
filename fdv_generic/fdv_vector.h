@@ -83,6 +83,15 @@ namespace fdv
       return MaxSizeV;
     }
     
+    // return -1 (return type is int16_t) on fail
+    int16_t indexOf(ItemT const& value)
+    {
+      for (uint8_t i = 0; i != m_dataSize; ++i)
+        if (value == m_data[ getPos(i) ])
+          return i;
+      return - 1;  // not found
+    }
+    
     
   private:
     

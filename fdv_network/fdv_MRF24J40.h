@@ -25,8 +25,11 @@ CASO 2: B non riceve il messaggio
 3) tutti i riceventi, eccetto A e quelli che hanno già ricevuto ACK, attendono per un tempo random e reinviano ACK
 */
 
+/*
+*/
 
-// 2010/2012 by Fabrizio Di Vittorio (fdivitto@tiscali.it)
+
+// 2010/2013 by Fabrizio Di Vittorio (fdivitto@tiscali.it)
 
 
 // note: this driver is vulnerable to replay attack. Replay attack defense must be implemented at the upper layer.
@@ -438,7 +441,7 @@ namespace fdv
       };
       Channel() : value(CHANNEL11) {}
       Channel(uint8_t value_) : value(value_) {}
-			bool operator==(Channel const& rhs) { return value == rhs.value; }
+      bool operator==(Channel const& rhs) { return value == rhs.value; }
       bool operator<=(Channel const& rhs) { return value <= rhs.value; }
 		  uint8_t value;
       typedef uint8_t Type;
@@ -449,8 +452,10 @@ namespace fdv
 	  static uint8_t const MAXPAYLOAD  = 108;
 		  
 	  
+  private:
+    
 	  // MRF24J40 general purpose timer value (each value = 8us), 0 = disabled
-	  static uint16_t const TIMERTOP   = 0;    // es. 12500 = 12500*8us = 100000us = 100ms (10 per second)
+	  static uint16_t const TIMERTOP    = 0;    // es. 12500 = 12500*8us = 100000us = 100ms (10 per second)
 
 
     // maximum number of link layer listeners
@@ -459,6 +464,11 @@ namespace fdv
 
     // maximum number of resends in case of no software ack received
     static uint8_t const MAXSENDTRIES = 5;
+    
+    
+    // maximum number of already received messages buffer (circular buffer)
+    static uint8_t const MAXALREADYRECEIVEDMESSAGES = 10;
+    
     
   private:
 
@@ -560,10 +570,32 @@ namespace fdv
       DataList const* dataList;
     
       explicit MRFSendFrame(uint8_t srcAddress_, uint8_t destAddress_, uint16_t type_length_, DataList const* dataList_)
-      : srcAddress(srcAddress_), destAddress(destAddress_), type_length(type_length_), dataList(dataList_)
+        : srcAddress(srcAddress_), destAddress(destAddress_), type_length(type_length_), dataList(dataList_)
+      {
+      }    
+    };
+    
+    
+    // identifies an already received message
+    struct ReceivedMessageID
+    {
+      uint8_t  sourceAddress;
+      uint16_t messageID;
+      
+      explicit ReceivedMessageID(uint8_t sourceAddress_, uint16_t messageID_)
+        : sourceAddress(sourceAddress_), messageID(messageID_)
+      {          
+      }
+      
+      ReceivedMessageID()
+        : sourceAddress(0), messageID(0)
       {
       }
-    
+      
+      bool operator == (ReceivedMessageID const& rhs) const
+      {
+        return sourceAddress == rhs.sourceAddress && messageID == rhs.messageID;
+      }
     };
 
 
@@ -872,7 +904,7 @@ namespace fdv
   private:
   
 
-    SendResult directSendFrame(MRFSendFrame const* frame, AckType ackType, CMD command = CMD_NONE, uint8_t const* extraData = NULL, uint8_t extraDataLen = 0, uint8_t TTL = 3)
+    SendResult directSendFrame(MRFSendFrame const* frame, AckType ackType, CMD command = CMD_NONE, uint8_t const* extraData = NULL, uint8_t extraDataLen = 0, uint8_t TTL = 3, bool flooded = false)
     {
       
       #ifdef VERBOSE
@@ -931,9 +963,10 @@ namespace fdv
         // 0..1 (2 bit) : TTL (time to live), values 0..3
         // 2..4 (3 bit) : command, values 0..7
         // 5    (1 bit) : 1 = requested soft ack
-        // 6..7 (2 bit) : must be 0 (to avoid conflict with soft-ack)
+        // 6    (1 bit) : 0 = direct message   1 = flooded (resent by another device)
+        // 7    (1 bit) : must be 0 (to avoid conflict with soft-ack)
         // Special case: 0xFF = Soft ACK
-        uint8_t const seqnum = TTL | ((uint8_t)command << 2) | (ackType == ACK_SOFTWARE? 1 << 5 : 0);
+        uint8_t const seqnum = TTL | ((uint8_t)command << 2) | (ackType == ACK_SOFTWARE? 1 << 5 : 0) | (flooded? 1 << 6 : 0);
         writeLongAddress(wpos++, seqnum);
       
         // Destination PANID
@@ -1017,13 +1050,12 @@ namespace fdv
         m_frameSent    = false;
 			  if ((txstat & BIT_TXNSTAT) == 0)
         {
-          if (ackType == ACK_SOFTWARE && !recvSoftACK(m_messageID))
+          if (ackType == ACK_SOFTWARE && !recvSoftACK(m_address[0], m_messageID))
           {
             // no soft-ack, retry
             #ifdef VERBOSE
             serial.write_P(PSTR("no ack, retry")); cout << endl;
             #endif
-            delayMicroseconds( 500 + Random::nextUInt16(0, 5000) ); // wait random time 500..5000us
             continue; 
           }            
           #ifdef VERBOSE
@@ -1086,7 +1118,7 @@ namespace fdv
       CMD command        = CMD_NONE;
       
       uint16_t messageID = 0;
-      bool softack       = false;
+      AckType acktype    = ACK_NONE;
       uint8_t seqnum     = 0;
       
       {
@@ -1120,21 +1152,14 @@ namespace fdv
           // Sequence number
           // 0..1 (2 bit) : TTL (time to live), values 0..3
           // 2..4 (3 bit) : command, values 0..7
-          // 5    (1 bit) : 1 = requested software ack
-          // 6..7 (2 bit) : must be 0 (reserved for soft-ack)
+          // 5    (1 bit) : 1 = requested soft ack
+          // 6    (1 bit) : 0 = direct message   1 = flooded (resent by another device)
+          // 7    (1 bit) : must be 0 (to avoid conflict with soft-ack)
+          // Special case: 0xFF = Soft ACK
           seqnum  = readLongAddress(rpos++);
           TTL     = seqnum & 0b11;
           command = (CMD)((seqnum >> 2) & 0b111);
-          softack = (seqnum & (1 << 5)) != 0;
-
-          // Check sequence number
-          if (seqnum == 0xFF) // is an ACK?
-          {
-            #ifdef VERBOSE
-            serial.write_P(PSTR("recvFrame: ACK!")); cout << endl;
-            #endif
-            return; // this is an ACK, discard
-          }
+          acktype = (seqnum & (1 << 5)) ? ACK_SOFTWARE : ACK_NONE;
       
           // Destination PANID (ignore)
 	        rpos += 2;
@@ -1188,7 +1213,7 @@ namespace fdv
           serial.write_P(PSTR("dst = ")); cout << (uint16_t)frame.destAddress << endl;
           serial.write_P(PSTR("prt = ")); cout << frame.type_length << endl;
           //serial.write_P(PSTR("cmd  = ")); cout << (uint16_t)command << endl;
-          //serial.write_P(PSTR("mess-id = ")); cout << (uint16_t)messageID << endl;
+          serial.write_P(PSTR("msg-id = ")); cout << (uint16_t)messageID << endl;
           serial.write_P(PSTR("seqn = ")); cout << (uint16_t)seqnum << endl;
           //serial.write_P(PSTR("frameLength = ")); cout << (uint16_t)frameLength << endl;
           //serial.write_P(PSTR("FCF = ")); cout << FCF << endl;
@@ -1276,7 +1301,6 @@ namespace fdv
               //serial.write_P(PSTR("  seqnum          = ")); cout << (uint16_t)command << endl;
               //for (uint16_t x=MEM_RX_FIFO; x < MEM_RX_FIFO+127; ++x)
                 //cout << readLongAddress(x) << ' ';
-              //while (1);  // todo: test
               return; // discard, wrong checksum
             }  
           }  
@@ -1285,19 +1309,67 @@ namespace fdv
           #ifdef VERBOSE
           serial.write_P(PSTR("  Wrong checksum, retry!")); cout << chk << '-' << checksum << endl;
           #endif
-        }  // end of tries loop               
+        }  // end of tries loop
         
-      }    // end of RX stop    
+      }    // end of RX stop
+    
+      // already received?
+      if (m_receivedMessages.indexOf(ReceivedMessageID(frame.srcAddress, messageID)) != -1)
+      {
+        #ifdef VERBOSE
+        serial.write_P(PSTR("recvFrame: already received")); cout << endl;
+        #endif
+        return; // yes, already received, discard.
+      }        
+        
+      // add this message to already received list
+      m_receivedMessages.add(ReceivedMessageID(frame.srcAddress, messageID));
+    
+      // not for me, not broadcast and not ACK? Wait that receiver sends ACK
+      if (frame.destAddress != m_address[0] && frame.destAddress != 0xFF && seqnum != 0xFF && acktype == ACK_SOFTWARE)
+      {
+        if (recvSoftACK(frame.srcAddress, messageID)) // wait ACK directed to source of this message
+          return; // ACK received, discard
+        // ACK not received, maybe actual recipient didn't receive the message. Resend the message.
+        delay_ms( 0 + Random::nextUInt16(0, 60) ); // wait random time
+        DataList data(NULL, frame.payload, frame.dataLength);
+        MRFSendFrame outFrame(frame.srcAddress, frame.destAddress, frame.type_length, &data);
+        directSendFrame(&outFrame, acktype, command, (extra.get()? extra.get()->extraData : NULL), (extra.get()? CMDDATASIZE : 0), TTL, true);
+    		return;
+      }    
+    
+      //#ifdef VERBOSE
+      if (seqnum & (1 << 6))
+      {
+        serial.write_P(PSTR("recvFrame: flooded message")); cout << endl;
+      }
+      //#endif
+
+      // Check if this is an ACK
+      if (seqnum == 0xFF) // is an ACK?
+      {
+        #ifdef VERBOSE
+        serial.write_P(PSTR("recvFrame: ACK!")); cout << endl;
+        #endif
+        if (frame.destAddress != m_address[0])  // do not resend if dest address is this device
+        {
+          // wait random time and resend ACK
+          delay_ms( 0 + Random::nextUInt16(0, 30) );
+          sendSoftACK(frame.srcAddress, frame.destAddress, messageID);
+        }
+        // now discard
+        return;
+      }
     
       // send software ack
-      if (frame.destAddress == m_address[0] && softack && seqnum != 0xFF)
+      if (frame.destAddress == m_address[0] && acktype == ACK_SOFTWARE && seqnum != 0xFF)
         sendSoftACK(frame.destAddress, frame.srcAddress, messageID);
 
       // resend broadcast messages (if TTL > 0). 
       // This is the way broadcast message uses to global flooding
       if (frame.destAddress == 0xFF && TTL > 0)
       {
-        delayMicroseconds( 500 + Random::nextUInt16(0, 5000) ); // wait random time 500..5000us
+        delay_ms( 0 + Random::nextUInt16(0, 60) ); // wait random time
         DataList data(NULL, frame.payload, frame.dataLength);
         MRFSendFrame outFrame(frame.srcAddress, frame.destAddress, frame.type_length, &data);
         directSendFrame(&outFrame, ACK_NONE, command, (extra.get()? extra.get()->extraData : NULL), (extra.get()? CMDDATASIZE : 0), TTL - 1);
@@ -1420,7 +1492,7 @@ namespace fdv
     }
     
     
-    bool recvSoftACK(uint16_t messageID)
+    bool recvSoftACK(uint8_t waiterAddress, uint16_t messageID)
     {
       #ifdef VERBOSE
       serial.write_P(PSTR("recvSoftACK")); cout << endl;
@@ -1506,13 +1578,22 @@ namespace fdv
         uint16_t const rmessageID = readLongAddress(rpos) | ((uint16_t)readLongAddress(rpos + 1) << 8);
         rpos += 2;
           
-        if (rmessageID == messageID && destAddress == m_address[0])
+        if (rmessageID == messageID && destAddress == waiterAddress)
         {
           #ifdef VERBOSE
           serial.write_P(PSTR("recvSoftACK: ok")); cout << endl;
           #endif
           return true;
-        }          
+        }
+        else
+        {
+          #ifdef VERBOSE
+          if (rmessageID != messageID) 
+            serial.write_P(PSTR("recvSoftACK: wrong messageID: ")); cout << (uint16_t)rmessageID << "-" << (uint16_t)messageID << endl;
+          if (destAddress != waiterAddress)
+            serial.write_P(PSTR("recvSoftACK: wrong waiter address: ")); cout << (uint16_t)destAddress << "-" << (uint16_t)waiterAddress << endl;
+          #endif          
+        }
       }        
       return false;
     }
@@ -1693,6 +1774,7 @@ namespace fdv
 	  bool     m_frameSent;
     bool     m_frameReceived;
     uint16_t m_messageID;
+    CircularBuffer<ReceivedMessageID, MAXALREADYRECEIVEDMESSAGES> m_receivedMessages;
   };
   
   
