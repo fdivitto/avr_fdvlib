@@ -204,11 +204,9 @@ namespace fdv
     {
       return htons(network_word);
     }
-
-
-
     
   };  // end of Utility struct    
+
 
 
 }

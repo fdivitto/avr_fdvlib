@@ -128,15 +128,20 @@ namespace fdv
     {
       setup();
       m_CS->writeLow();
-      //delayMicroseconds(1);
     }
 
 
     void deselect()
     {
-      //delayMicroseconds(1);
       m_CS->writeHigh();
     }
+
+
+    Mutex& mutex()
+    {
+      return s_mutex[0];
+    }
+
 
 
   private:
@@ -175,6 +180,8 @@ namespace fdv
 
   private:
 
+    static uint32_t const MAXDEVICES = 1;
+
     Pin const*  m_CS;         // the device SS (could be SS=CS)
 
     bool        m_LSBFirst;   // true=LSBFirst false=MSBFirst
@@ -184,6 +191,7 @@ namespace fdv
     uint8_t     m_SPSR;
 
     static uint8_t s_HardwareInstances;  // number of hardware SPI users (instances of SPIMaster which uses hardware SPI)
+    static Mutex   s_mutex[MAXDEVICES];
 
   };
 

@@ -822,7 +822,7 @@ namespace fdv
         if ( ((b >> 4) & 0x0F) != 4)
           return false; // unsupported IP version
         uint16_t headerLength = static_cast<uint16_t>(b & 0x0F) * 4;  // header length in bytes
-        if (headerLength < 20 || headerLength > frame->dataLength)  // fdv1
+        if (headerLength < 20 || headerLength > frame->dataLength)
         {
           #ifdef TCPVERBOSE
           serial.write_P(PSTR("Protocol_IP, invalid headerLength")); cout << endl;

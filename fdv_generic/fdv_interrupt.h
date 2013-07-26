@@ -4,7 +4,7 @@
 #ifndef FDV_INTERRUPT_H_
 #define FDV_INTERRUPT_H_
 
-
+#include <stddef.h>
 #include <util/atomic.h>
 
 #include "fdv_platform.h"
@@ -239,7 +239,106 @@ namespace fdv
       }
     }
 
+  };
 
+
+
+
+  /////////////////////////////////////////////////////////////////////////////////////////////
+  // Mutex class
+
+  inline uint32_t MutexGet(uint8_t volatile* mutex)
+  {
+    uint32_t r = 1;
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+    {
+      r = *mutex;
+      if (r == 0)
+        *mutex = 1;
+    }
+    return r;
+  }
+
+
+  class Mutex
+  {
+    public:
+
+      Mutex()
+       : m_mutex(0)
+      {
+      }
+
+      void lock() volatile
+      {
+        while (!tryLock());
+      }
+
+      bool tryLock() volatile
+      {
+        return MutexGet(&m_mutex) == 0;
+      }
+
+      void unlock() volatile
+      {
+        m_mutex = 0;
+      }
+
+    private:
+
+      uint8_t volatile m_mutex;
+  };
+
+  /////////////////////////////////////////////////////////////////////////////////////////////
+  // Mutex automatic lock/unlock helper
+
+  class MutexLock
+  {
+    public:
+      MutexLock(Mutex& mutex, bool enabled = true)
+        : m_mutex(enabled? &mutex : NULL)
+      {
+        if (m_mutex)       
+          m_mutex->lock();
+      }
+
+      ~MutexLock()
+      {
+        if (m_mutex)
+          m_mutex->unlock();
+      }
+
+    private:
+      Mutex* m_mutex;
+  };
+
+
+  /////////////////////////////////////////////////////////////////////////////////////////////
+  // Mutex automatic trylock/unlock helper
+
+  class MutexTryLock
+  {
+    public:
+      MutexTryLock(Mutex& mutex)
+        : m_mutex(mutex), m_acquired(false)
+      {
+        m_acquired = m_mutex.tryLock();
+      }
+
+      ~MutexTryLock()
+      {
+        if (m_acquired)
+          m_mutex.unlock();
+      }
+
+      bool acquired()
+      {
+        return m_acquired;
+      }
+
+    private:
+      Mutex& m_mutex;
+      bool   m_acquired;
   };
 
 

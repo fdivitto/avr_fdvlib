@@ -9,8 +9,7 @@ namespace fdv
 
   // SPIMaster storage
   uint8_t HardwareSPIMaster::s_HardwareInstances = 0;
-
-
+  Mutex   HardwareSPIMaster::s_mutex[HardwareSPIMaster::MAXDEVICES];
 
 
 
