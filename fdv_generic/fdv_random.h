@@ -19,21 +19,27 @@ namespace fdv
   struct Random
   {
 
+  private:
+    static bool init(bool doInit = false)
+    {
+      static bool s_init = false;
+      if (doInit)
+        s_init = true;
+      return s_init;
+    }
+
+  public:
     static void reseed(uint32_t seed)
     {
+      init(true);
       srandom(seed + 1);
     }
     
     // 0...RANDOM_MAX
     static uint32_t nextUInt32()
-    {
-      static bool s_init = false;
-      if (s_init == false)
-      {
-        s_init = true;
-        reseed(millis());
-      }
-      
+    {      
+      if (!init())
+        reseed(millis());      
       return random();
     }
     

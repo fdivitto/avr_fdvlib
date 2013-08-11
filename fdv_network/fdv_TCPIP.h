@@ -13,6 +13,7 @@
 #include "../fdv_generic/fdv_random.h"
 #include "../fdv_generic/fdv_utility.h"
 #include "../fdv_generic/fdv_memory.h"
+#include "../fdv_generic/fdv_timesched.h"
 
 
 
@@ -942,7 +943,7 @@ namespace fdv
   class Protocol_ICMP : public Protocol_IP::IListener
   {
     
-    static uint32_t const MAXECHOREPLYTIME = 4000;
+    static uint32_t const MAXECHOREPLYTIME = 6000;
 
 
   public:
@@ -1011,7 +1012,7 @@ namespace fdv
       m_IP->send(IPAddress(0, 0, 0, 0), dest, 0x01, DataList(NULL, &data[0], sizeof(data)));
       
       // wait for reply
-      TimeOut timeOut(MAXECHOREPLYTIME);
+      SoftTimeOut timeOut(MAXECHOREPLYTIME);
       while (m_receivedID != id && !timeOut)
         m_IP->receive();
       

@@ -394,7 +394,7 @@ namespace fdv
   
   
   ////////////////////////////////////////////////////////////////
-  // TimeOut class
+  // TimeOut class (uses interrupts and taskmanager)
   // ex. TimeOut(200)  <- after 200ms TimeOut() returns true
 
   class TimeOut
@@ -431,7 +431,39 @@ namespace fdv
   };
 
   
+  ////////////////////////////////////////////////////////////////
+  // SoftTimeOut class
+  // ex. SoftTimeOut(200)  <- after 200ms SoftTimeOut() returns true
+  // note: disable interrupts for each "bool()" call!
 
+  class SoftTimeOut
+  {
+    
+  public:
+    
+    SoftTimeOut(uint32_t time)
+      : m_timeOut(time), m_startTime(millis())
+    {
+    }
+    
+    operator bool()
+    {
+      return millisDiff(m_startTime, millis()) > m_timeOut;
+    }
+    
+    void reset(uint32_t time)
+    {
+      m_timeOut   = time;
+      m_startTime = millis();
+    }
+    
+  private:
+    
+    uint32_t m_timeOut;
+    uint32_t m_startTime;
+  };
+
+  
 
 
   
