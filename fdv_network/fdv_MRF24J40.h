@@ -305,13 +305,18 @@ namespace fdv
     static uint8_t const BIT_HSYMTMRIF = BIT5;
     
     // TESTMODE: TEST MODE REGISTER
-    static uint16_t const TESTMODE      = 0x022F;
+    static uint16_t const REG_TESTMODE      = 0x022F;
     //   TESTMODE : Test Mode bits
     static uint8_t const SHIFT_TESTMODE = 0;
     //   RSSIWAIT : RSSI State Machine Parameter bits
     static uint8_t const SHIFT_RSSIWAIT = 3;
     
+    // TRISGPIO: GPIO PIN DIRECTION REGISTER
+    static uint16_t const REG_TRISGPIO = 0x34;
     
+    // GPIO: GPIO PORT REGISTER
+    static uint16_t const REG_GPIO = 0x33;
+
     // HSYMTMRL: HALF SYMBOL TIMER LOW BYTE REGISTER
     static uint16_t const REG_HSYMTMRL = 0x28;
     
@@ -444,8 +449,12 @@ namespace fdv
       Channel(uint8_t value_) : value(value_) {}
       bool operator==(Channel const& rhs) { return value == rhs.value; }
       bool operator<=(Channel const& rhs) { return value <= rhs.value; }
-      uint8_t value;
+      Channel operator++() { return ++value; }
+      uint8_t         value;
       typedef uint8_t Type;
+      static Channel const getMinValue() { return Channel(CHANNEL11); }
+      static Channel const getMaxValue() { return Channel(CHANNEL26); }
+      static const uint8_t CHANNELSCOUNT = 16;
 	  };	  
 	  
     
@@ -464,7 +473,7 @@ namespace fdv
 
 
     // maximum number of resends in case of no software ack received
-    static uint8_t const MAXSENDTRIES = 5;
+    static uint8_t const MAXSENDTRIES = 2;
     
     
     // maximum number of already received messages buffer (circular buffer)
@@ -681,7 +690,8 @@ namespace fdv
       setReg(REG_BBREG2, VAL_CCAMODE_1);
 
       // set energy detection threshold for CCA
-      setReg(REG_CCAEDTH, 10);    // fine tune!!
+      //setReg(REG_CCAEDTH, 10);    // fine tune!!
+      setReg(REG_CCAEDTH, 0X60);    // fine tune!!
 
       // set RSSI mode (calculate for each received packet)
       setReg(REG_BBREG6, BIT_RSSIMODE2);
@@ -701,7 +711,7 @@ namespace fdv
       if (m_deviceType == MRF24J40MB)
       {
         // PA/LNA (Power Amplifier / Low Noise Amplifier) state machine enable
-        setReg(TESTMODE, (7 << SHIFT_TESTMODE) | (1 << SHIFT_RSSIWAIT));
+        setReg(REG_TESTMODE, (7 << SHIFT_TESTMODE) | (1 << SHIFT_RSSIWAIT));
       }
         
       // flush RX fifo
@@ -1050,7 +1060,7 @@ namespace fdv
         // Send
         setReg_noIRQ(REG_TXNCON, BIT_TXNTRIG);
 
-        SoftTimeOut timeOut(15);  // wait up to 15ms
+        TimeOut timeOut(15);  // wait up to 15ms
         while (!m_frameSent && !timeOut)
           checkInterrupt();          
         uint8_t txstat = getReg_noIRQ(REG_TXSTAT);
@@ -1348,7 +1358,75 @@ namespace fdv
     }
     
 
-  
+  public:
+
+    uint8_t channelAssessment()
+    {    
+
+      if (MRF24J40MB == m_deviceType)
+      {
+        setReg(REG_TESTMODE, 0x08);
+        setReg(REG_TRISGPIO, 0x0F); 
+        setReg(REG_GPIO, 0x04);    
+      }
+   
+      setReg(REG_BBREG6, 0x80);
+   
+      uint8_t RSSIcheck = getReg(REG_BBREG6);
+      while ((RSSIcheck & 0x01) != 0x01)
+      {
+        RSSIcheck = getReg(REG_BBREG6);
+      }
+   
+      RSSIcheck = getReg(0x210);
+   
+      setReg(REG_BBREG6, BIT_RSSIMODE2);
+   
+      if (MRF24J40MB == m_deviceType)
+      {
+        setReg(REG_TRISGPIO, 0x00);
+        setReg(REG_GPIO, 0);
+        setReg(REG_TESTMODE, 0x0F);
+      }
+   
+      return RSSIcheck;
+    }
+
+    struct RSSIStats
+    {
+      uint8_t min;
+      uint8_t avg;
+      uint8_t max;
+    };
+
+    // stats must be stats[Channel::CHANNELSCOUNT]
+    void getChannelsRSSIStats(RSSIStats* stats, uint32_t millisPerChannel)
+    {
+      Channel prevChannel = m_channel;
+      for (Channel ch = Channel::getMinValue(); ch <= Channel::getMaxValue(); ++ch)
+      {
+        setChannel(ch);
+        stats[ch.value].min = 255;
+        stats[ch.value].avg = 0;
+        stats[ch.value].max = 0;
+        uint32_t avg = 0;
+        uint32_t count = 0;
+        TimeOut timeout(millisPerChannel);
+        while (!timeout)
+        {
+          uint8_t rssi = channelAssessment();
+          if (rssi < stats[ch.value].min)
+            stats[ch.value].min = rssi;
+          if (rssi > stats[ch.value].max)
+            stats[ch.value].max = rssi;
+          avg += rssi;
+          ++count;
+        }
+        stats[ch.value].avg = avg / count;
+      }
+      setChannel(prevChannel);
+    }
+ 
     
   private:
     
@@ -1436,7 +1514,7 @@ namespace fdv
         // Send
         setReg_noIRQ(REG_TXNCON, BIT_TXNTRIG);
 
-        SoftTimeOut timeOut(15);  // wait up to 15ms
+        TimeOut timeOut(15);  // wait up to 15ms
         while (!m_frameSent && !timeOut)
           checkInterrupt();
         uint8_t txstat = getReg_noIRQ(REG_TXSTAT);
@@ -1450,7 +1528,7 @@ namespace fdv
     
     bool recvSoftACK(uint8_t waiterAddress, uint16_t messageID, uint32_t maxTimeOut, uint16_t* ackMsgID = NULL)
     {
-      SoftTimeOut timeOut(maxTimeOut);
+      TimeOut timeOut(maxTimeOut);
       while (!timeOut)
       {
         checkInterrupt();
