@@ -1,38 +1,29 @@
 /*
-** Invio di un messaggio normale:
-
-1) A deve mandare il messaggio M a B
-2) A manda il messaggio M in broadcast (con messageID e destinatario B nel messaggio stesso)
-3) tutti i riceventi, eccetto B e quelli che hanno già ricevuto M, attendono per un tempo T1
-4) i riceventi che avevano già ricevuto M, lo cancellano, senza attendere T1
-
-CASO 1: B riceve il messaggio M
-
-  5_1) B invia subito un ACK per M
-  6_1) tutti i riceventi che sono in attesa T1 cancellano il messaggio M
-
-CASO 2: B non riceve il messaggio
-
-  5_2) tutti i riceventi che sono in attesa T1, dopo T1 e un tempo random, reinviano M
-  6_2) si ritorna al passo #3
-
-
-
-** Invio di un messaggio ACK:
-
-1) B deve mandare un messaggio ACK ad A
-2) B manda il messaggio ACK in broadcast (con messageID e destinatario A nel messaggio stesso)
-3) tutti i riceventi, eccetto A e quelli che hanno già ricevuto ACK, attendono per un tempo random e reinviano ACK
-*/
-
-/*
+# Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
+# Copyright (c) 2013 Fabrizio Di Vittorio.
+# All rights reserved.
+ 
+# GNU GPL LICENSE
+#
+# This module is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; latest version thereof,
+# available at: <http://www.gnu.org/licenses/gpl.txt>.
+#
+# This module is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this module; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA
 */
 
 
-// 2010/2013 by Fabrizio Di Vittorio (fdivitto@tiscali.it)
 
 
-// note: this driver is vulnerable to replay attack. Replay attack defense must be implemented at the upper layer.
+// note: this driver may be vulnerable to replay attack. Replay attack defense must be implemented at the upper layer.
 
 
 #ifndef FDV_MRF24J40_H
