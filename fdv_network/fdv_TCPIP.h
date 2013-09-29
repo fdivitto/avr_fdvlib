@@ -400,7 +400,7 @@ namespace fdv
     
     static uint8_t const  MAXARPENTRIES = 5;
     
-    static uint32_t const MAXCACHEITEMAGE = 300;  // maxium age of a cache item (in seconds)
+    static uint32_t const MAXCACHEITEMAGE = 300000;  // maxium age of a cache item (in seconds)
     
 
     // the ARP table item
@@ -496,18 +496,22 @@ namespace fdv
 
         uint16_t operation = frame->readWord();
 
+        // read source MAC address
         LinkAddress sourceHardwareAddress;
         frame->readBlock(sourceHardwareAddress.data(), 6);
 
+        // read source protocol address
         IPAddress sourceProtocolAddress;
-        frame->readBlock(&sourceProtocolAddress, 4);
+        frame->readBlock(sourceProtocolAddress.data(), 4);
 
         // bypass target hardware address
         frame->bypass(6);
         
+        // read target protocol address
         IPAddress targetProtocolAddress;
-        frame->readBlock(&targetProtocolAddress, 4);
+        frame->readBlock(targetProtocolAddress.data(), 4);
 
+        // check protocol address
         uint8_t interfaceIndex = 0xFF;
         for (uint8_t i = 0; i != m_interfaces.size(); ++i)
           if (targetProtocolAddress == m_interfaces[i].address)
@@ -516,7 +520,9 @@ namespace fdv
             break;
           }
         if (interfaceIndex == 0xFF)
+        {
           return false; // this ARP is not for me!
+        }
 
         // save sender addresses
         addCacheTableItem(Item(sourceProtocolAddress, sourceHardwareAddress, seconds()));
@@ -524,13 +530,13 @@ namespace fdv
         switch (operation)
         {
           case 0x0001:  // Request
-          {
             // send reply
             sendPacket(interfaceIndex, 0x0002, sourceHardwareAddress, sourceProtocolAddress);
             break;
-          }
           case 0x0002:  // Reply
             // nothing to do, address already saved
+            break;
+          default:      // unknown
             break;
         }
         return true;
