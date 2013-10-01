@@ -1065,7 +1065,7 @@ namespace fdv
   
   public:
   
-    static uint8_t const MAXLISTENERS = 2;
+    static uint8_t const MAXLISTENERS = 4;
 
   
   public:
@@ -1106,6 +1106,12 @@ namespace fdv
     void addListener(IListener* listener)
     {
       m_listeners.push_back(listener);
+    }
+
+
+    void delListener(IListener* listener)
+    {
+      m_listeners.remove(listener);
     }
 
 
@@ -1198,7 +1204,7 @@ namespace fdv
     Array<IListener*, MAXLISTENERS> m_listeners;       // upper layer listeners
     uint16_t                        m_lastSrcUsedPort; // next port to use for sending
     
-  };
+  };  
 
 
 
@@ -1262,6 +1268,148 @@ namespace fdv
     Protocol_UDP  m_UDP;
   };
 
+
+
+  ////////////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////////////
+  // Socket
+
+  class Socket : Protocol_UDP::IListener
+  {
+    
+  public:
+
+    enum Protocol { UDP };
+
+    Socket(StackTCPIP* stack, Protocol protocol)
+      : m_stack(stack), m_protocol(protocol), m_bindHost(IPAddress(0, 0, 0, 0)), m_bindPort(0)
+    {
+      switch (m_protocol)
+      {
+        case UDP:
+          m_stack->UDP().addListener(this);
+          break;
+      }
+    }
+
+    ~Socket()
+    {
+      switch (m_protocol)
+      {
+        case UDP:
+          m_stack->UDP().delListener(this);
+          break;
+      }
+    }
+
+    void bind(IPAddress const& host, uint16_t port)
+    {
+      m_bindHost = host;
+      m_bindPort = port;
+    }
+
+    // Implements Protocol_UDP::ListenerInterface
+    bool processUDPDatagram(IPAddress const& sourceAddress, Protocol_UDP::Datagram* datagram)
+    {
+      if ((!m_bindHost.isAllZero() && m_bindHost != sourceAddress) || (m_bindPort != 0 && m_bindPort != datagram->sourcePort))
+      {
+        //serial.writeIPv4(sourceAddress.data()); cout << endl;
+        //cout << (uint16_t)datagram->destPort << endl;
+        return false;
+      }
+      m_currentReceivedData = min(datagram->dataLength, m_currentBufferSize);
+      memcpy(m_currentBuffer, datagram->data, m_currentReceivedData);
+      return true;
+    }
+
+    uint16_t recv(uint32_t timeout_ms, void* buffer, uint16_t bufferSize)
+    {
+      m_currentBuffer       = buffer;
+      m_currentBufferSize   = bufferSize;
+      m_currentReceivedData = 0;
+      TimeOut timeout(timeout_ms);
+      while (!timeout && m_currentReceivedData == 0)
+      {
+        m_stack->yield();
+      }
+      //cout << "timeout=" << (timeout?"T":"F") << " m_curr..=" << m_currentReceivedData << endl;
+      return m_currentReceivedData;
+    }
+
+    bool send(IPAddress const& destAddress, uint16_t port, void const* buffer, uint16_t bufferSize)
+    {
+      DataList data(NULL, buffer, bufferSize);
+      switch (m_protocol)
+      {
+        case UDP:
+          return m_stack->UDP().send(port, destAddress, data);
+        default:
+          return false;
+      }
+    }
+
+  private:
+
+    StackTCPIP* m_stack;
+    Protocol    m_protocol;
+    IPAddress   m_bindHost;
+    uint16_t    m_bindPort;
+    void*       m_currentBuffer;
+    uint16_t    m_currentBufferSize;
+    uint16_t    m_currentReceivedData;
+  };
+
+
+
+  ////////////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////////////
+  // SNTPClient
+  // Gets current date/time from a NTP (SNTP) server (default is pool.ntp.org).
+  
+  class SNTPClient
+  {
+    
+  public:
+    
+    explicit SNTPClient(StackTCPIP* stackTCPIP, IPAddress serverIP = IPAddress(169, 229, 70, 64), uint16_t port = 123)
+      : m_stackTCPIP(stackTCPIP), m_server(serverIP), m_port(port)
+    {
+    }
+    
+    // you should call DateTime.setNTPDateTime((uint8_t const*)&outValue, timezone)
+    bool query(uint64_t* outValue) const
+    {
+      // send req (mode 3), unicast, version 4
+      uint8_t const MODE_CLIENT   = 3;
+      uint8_t const VERSION       = 4;
+      uint8_t const BUFLEN        = 48;
+      uint32_t const REPLYTIMEOUT = 3000;
+      uint8_t buf[BUFLEN];
+      memset(&buf[0], 0, BUFLEN);
+      buf[0] = MODE_CLIENT | (VERSION << 3);
+      Socket socket(m_stackTCPIP, Socket::UDP);
+      socket.bind(m_server, m_port);
+
+      if ( socket.send(m_server, m_port, &buf[0], BUFLEN) )
+      {
+        // get reply
+        if (socket.recv(REPLYTIMEOUT, &buf[0], BUFLEN) == BUFLEN)
+        {
+          memcpy(outValue, &buf[40], sizeof(uint64_t));
+          return true;  // ok
+        }
+      }
+
+      return false;  // error
+    }
+    
+
+  private:
+
+    StackTCPIP*   m_stackTCPIP;
+    IPAddress     m_server;
+    uint16_t      m_port;
+  };
 
 
 

@@ -213,6 +213,17 @@ namespace fdv
       return m_data[--m_size];
     }
 
+    void remove(ItemT const& value)
+    {
+      for (uint16_t i = 0; i < m_size; ++i)
+        if (m_data[i] == value)
+        {
+          for (uint16_t j = i + 1; j < m_size; ++j)
+            m_data[j - 1] = m_data[j];
+          --m_size;
+        }
+    }
+
     uint16_t size() const
     {
       return m_size;

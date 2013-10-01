@@ -133,13 +133,12 @@ namespace fdv
     #endif
 
     static Task volatile s_info[MAXTASKS];
+
     
   public:
     
-        
-    
     static void init()
-    {      
+    {          
       static bool ls_initialized = false;
 
       if (!ls_initialized)

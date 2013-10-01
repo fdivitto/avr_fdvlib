@@ -124,7 +124,7 @@ namespace fdv
     DateTime& setNTPDateTime(uint8_t const* datetimeField, uint8_t timeZone)
     {
       uint32_t t = 0;
-      for (uint8_t i=0; i<4; ++i)
+      for (uint8_t i = 0; i < 4; ++i)
         t = t << 8 | datetimeField[i];
       float f = ((long)datetimeField[4] * 256 + datetimeField[5]) / 65535.0; 
       t -= 2208988800UL; 
