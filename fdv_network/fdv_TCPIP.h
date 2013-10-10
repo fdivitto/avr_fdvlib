@@ -326,6 +326,18 @@ namespace fdv
       return m_value[0] == 0x00 && m_value[1] == 0x00 && m_value[2] == 0x00 && m_value[3] == 0x00;
     }
     
+    bool isBroadcast() const
+    {
+      return (m_value[0] == 0xFF && m_value[1] == 0xFF && m_value[2] == 0xFF && m_value[3] == 0xFF) ||
+             (m_value[3] == 0xFF) ||
+             (m_value[3] == 0x00);
+    }
+
+    bool isMulticast() const
+    {
+      return (m_value[0] >= 224 && m_value[0] <= 239);
+    }
+
     bool operator== (IPAddress const& rhs) const
     {
       return m_value[0] == rhs.m_value[0] && m_value[1] == rhs.m_value[1] && m_value[2] == rhs.m_value[2] && m_value[3] == rhs.m_value[3];
@@ -484,6 +496,10 @@ namespace fdv
     bool processLinkLayerFrame(LinkLayerReceiveFrame* frame)
     {
       
+      #ifdef TCPVERBOSE
+      serial.write_P(PSTR("ARP::processLinkLayerFrame")); cout << endl;
+      #endif
+
       if (frame->type_length == 0x0806 && // check "type_length" ethernet field (0x0806)
           frame->readWord() == 0x0001 &&  // check Hardware Address Type of ARP field (0x0001 = Ethernet)
           frame->readWord() == 0x0800 &&  // check Protocol Address Type of ARP field (0x0800 = IPv4)
@@ -491,7 +507,7 @@ namespace fdv
           frame->readByte() == 4)         // check Protocol Address Length of ARP field (4 = IPv4)
       {
         #ifdef TCPVERBOSE
-        serial.write_P(PSTR("ARP::processLinkLayerFrame")); cout << endl;
+        serial.write_P(PSTR("ARP::processLinkLayerFrame: accepted")); cout << endl;
         #endif
 
         uint16_t operation = frame->readWord();
@@ -499,10 +515,16 @@ namespace fdv
         // read source MAC address
         LinkAddress sourceHardwareAddress;
         frame->readBlock(sourceHardwareAddress.data(), 6);
+        #ifdef TCPVERBOSE
+        serial.write_P(PSTR("ARP::processLinkLayerFrame: src MAC addr: ")); serial.writeMAC(sourceHardwareAddress.data()); cout << endl;
+        #endif
 
         // read source protocol address
         IPAddress sourceProtocolAddress;
         frame->readBlock(sourceProtocolAddress.data(), 4);
+        #ifdef TCPVERBOSE
+        serial.write_P(PSTR("ARP::processLinkLayerFrame: src prot addr: ")); serial.writeIPv4(sourceProtocolAddress.data()); cout << endl;
+        #endif
 
         // bypass target hardware address
         frame->bypass(6);
@@ -510,6 +532,9 @@ namespace fdv
         // read target protocol address
         IPAddress targetProtocolAddress;
         frame->readBlock(targetProtocolAddress.data(), 4);
+        #ifdef TCPVERBOSE
+        serial.write_P(PSTR("ARP::processLinkLayerFrame: dst prot addr: ")); serial.writeIPv4(targetProtocolAddress.data()); cout << endl;
+        #endif
 
         // check protocol address
         uint8_t interfaceIndex = 0xFF;
@@ -521,6 +546,9 @@ namespace fdv
           }
         if (interfaceIndex == 0xFF)
         {
+          #ifdef TCPVERBOSE
+          serial.write_P(PSTR("ARP::processLinkLayerFrame: not for me, discard")); cout << endl;
+          #endif
           return false; // this ARP is not for me!
         }
 
@@ -531,16 +559,28 @@ namespace fdv
         {
           case 0x0001:  // Request
             // send reply
+            #ifdef TCPVERBOSE
+            serial.write_P(PSTR("ARP::processLinkLayerFrame: ARP request, send reply")); cout << endl;
+            #endif
             sendPacket(interfaceIndex, 0x0002, sourceHardwareAddress, sourceProtocolAddress);
             break;
           case 0x0002:  // Reply
             // nothing to do, address already saved
+            #ifdef TCPVERBOSE
+            serial.write_P(PSTR("ARP::processLinkLayerFrame: ARP reply, address saved")); cout << endl;
+            #endif
             break;
           default:      // unknown
+            #ifdef TCPVERBOSE
+            serial.write_P(PSTR("ARP::processLinkLayerFrame: ARP unknown cmd!")); cout << endl;
+            #endif
             break;
         }
         return true;
       }
+      #ifdef TCPVERBOSE
+      serial.write_P(PSTR("ARP::processLinkLayerFrame: not ARP")); cout << endl;
+      #endif
       return false;
     }
 
@@ -548,20 +588,40 @@ namespace fdv
 
     void addCacheTableItem(Item const& item)
     {
+      /*
+      serial.writeIPv4(item.protocolAddress.data()); cout << endl;
+      if (item.protocolAddress.isBroadcast()) cout << "  isBroadcast" << endl;
+      if (item.protocolAddress.isMulticast()) cout << "  isMulticast" << endl;
+      */
+
+      if (item.hardwareAddress.isBroadcast() || item.protocolAddress.isBroadcast() || item.protocolAddress.isMulticast())
+      {
+        #ifdef TCPVERBOSE
+        serial.write_P(PSTR("ARP::addCacheTableItem: not added")); cout << endl;
+        #endif
+        return;
+      }
       for (uint8_t i = 0; i != m_table.size(); ++i)
       {
         if (m_table[i].protocolAddress == item.protocolAddress)
         {
           // update entry
           #ifdef TCPVERBOSE
-          serial.write_P(PSTR("addCacheTableItem: entry updated ")); serial.writeIPv4(item.protocolAddress.data()); cout << endl;
+          if (m_table[i] == item)
+          {
+            serial.write_P(PSTR("ARP::addCacheTableItem: exists")); cout << endl;
+          }
+          else
+          {
+            serial.write_P(PSTR("ARP::addCacheTableItem: updated")); cout << endl;
+          }
           #endif
           m_table[i] = item;
           return;
         }
       }
       #ifdef TCPVERBOSE
-      serial.write_P(PSTR("addCacheTableItem: entry added ")); serial.writeIPv4(item.protocolAddress.data()); cout << endl;
+      serial.write_P(PSTR("ARP::addCacheTableItem: added")); cout << endl;
       #endif
       m_table.add(item);
     }
@@ -571,6 +631,9 @@ namespace fdv
     // targetHardwareAddress can be (0,0,0,0,0,0) if unknown
     bool sendPacket(uint8_t interfaceIndex, uint16_t operation, LinkAddress const& targetHardwareAddress, IPAddress const& targetProtocolAddress)
     {
+      #ifdef TCPVERBOSE
+      serial.write_P(PSTR("ARP::sendPacket")); cout << endl;
+      #endif
       InterfaceEntry& interfaceEntry = m_interfaces[interfaceIndex];
       ARPPacket packet;
       packet.hardwareAddressType   = Utility::htons(0x0001);
@@ -587,7 +650,7 @@ namespace fdv
                                targetHardwareAddress.isNull()? LinkAddress(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF) : targetHardwareAddress,  // if targetHardwareAddress=(0,0,0,0,0,0), it is broadcast
                                0x0806,      // this is ARP
                                &frameData);        
-//cout << "sendPacket int=" << interfaceIndex << endl;
+
       return interfaceEntry.interface->sendFrame(&frame) == ILinkLayer::SendOK;
     }
 
@@ -600,9 +663,20 @@ namespace fdv
 
     LinkAddress const* getHardwareAddressFromCache(IPAddress const& targetProtocolAddress)
     {
+      #ifdef TCPVERBOSE
+      serial.write_P(PSTR("ARP::getHardwareAddressFromCache")); cout << endl;
+      #endif
       for (uint8_t i = 0; i != m_table.size(); ++i)
         if (m_table[i].isValid() && m_table[i].protocolAddress == targetProtocolAddress)
+        {
+          #ifdef TCPVERBOSE
+          serial.write_P(PSTR("ARP::getHardwareAddressFromCache: found")); cout << endl;
+          #endif
           return &m_table[i].hardwareAddress;
+        }
+      #ifdef TCPVERBOSE
+      serial.write_P(PSTR("ARP::getHardwareAddressFromCache: not found")); cout << endl;
+      #endif
       return NULL; // not found
     }
 
@@ -610,7 +684,7 @@ namespace fdv
     LinkAddress const* getHardwareAddress(uint8_t interfaceIndex, IPAddress const& targetProtocolAddress)
     {
       #ifdef TCPVERBOSE
-      serial.write_P(PSTR("getHardwareAddress() of ")); serial.writeIPv4(targetProtocolAddress.data()); cout << endl;
+      serial.write_P(PSTR("ARP::getHardwareAddress: prot: ")); serial.writeIPv4(targetProtocolAddress.data()); cout << endl;
       #endif
       
       // check cache first
@@ -619,9 +693,6 @@ namespace fdv
       if (r == NULL)
       {
         // not found, send request message
-        #ifdef TCPVERBOSE
-        serial.write_P(PSTR("getHardwareAddress(): not found, send ARP request")); cout << endl;
-        #endif
         sendPacket(interfaceIndex, 0x0001, LinkAddress(), targetProtocolAddress);
       }
       
@@ -723,6 +794,9 @@ namespace fdv
     // return 0xFF on fail  
     uint8_t findInterfaceForAddress(IPAddress const& destAddress, IPAddress* effectiveDestination)
     {
+      #ifdef TCPVERBOSE
+      serial.write_P(PSTR("IP::findInterfaceForAddress")); cout << endl;
+      #endif
       uint8_t bestRouteIndex = 0xFF;
       int8_t bestRouteRank   = -1;
       for (uint8_t i = 0; i != m_routingTable.size(); ++i)
@@ -742,7 +816,12 @@ namespace fdv
       }
       //cout << "use route " << bestRouteIndex << endl;
       if (bestRouteIndex == 0xFF)
+      {
+        #ifdef TCPVERBOSE
+        serial.write_P(PSTR("IP::findInterfaceForAddress: no route")); cout << endl;
+        #endif
         return 0xFF; // no route  
+      }
         
       uint8_t interfaceIndex = m_routingTable[bestRouteIndex].interfaceIndex;
       if (effectiveDestination != NULL) 
@@ -753,15 +832,19 @@ namespace fdv
         else
           *effectiveDestination = destAddress; // yes, don't need the gateway
       }
+      #ifdef TCPVERBOSE
+      serial.write_P(PSTR("IP::findInterfaceForAddress: ")); cout << (uint16_t)interfaceIndex << endl;
+      #endif
       return interfaceIndex;   
     }
 
 
     // if srcAddress=0.0.0.0 then it is automatically selected from used interface
-    bool send(IPAddress const& srcAddress, IPAddress const& destAddress, uint8_t protocol, DataList const& data)
+    bool send(IPAddress const& srcAddress, IPAddress const& destAddress, uint8_t protocol, DataList const& data, bool isRouting)
     {
       #ifdef TCPVERBOSE
-      serial.write_P(PSTR("IPsend to ")); serial.writeIPv4(destAddress.data()); cout << endl;
+      serial.write_P(PSTR("IP:send: src: ")); serial.writeIPv4(srcAddress.data()); cout << endl;
+      serial.write_P(PSTR("IP:send: dst: ")); serial.writeIPv4(destAddress.data()); cout << endl;
       #endif
       
       IPAddress effectiveDestAddress; // this IP address is used only in order to get effective hardware address, not as effective destination IP address
@@ -773,6 +856,9 @@ namespace fdv
       LinkAddress const* destHardwareAddress = m_ARP->getHardwareAddress(interfaceIndex, effectiveDestAddress);
       if (destHardwareAddress == NULL)  // still not available? Try until ARPTRYTIMEOUT timeouts
       {
+        #ifdef TCPVERBOSE
+        serial.write_P(PSTR("IP:send: no hardware addr")); cout << endl;
+        #endif
         return false;
         // todo: test
         /*
@@ -782,6 +868,15 @@ namespace fdv
           */
       }
                         
+      // avoid routing to the same interface
+      if (isRouting && findInterfaceForAddress(srcAddress, NULL) == interfaceIndex)
+      {
+        #ifdef TCPVERBOSE
+        serial.write_P(PSTR("IP:send: routing failed, same interface!")); cout << endl;
+        #endif
+        return false;
+      }
+
       IPAddress sourceAddress = srcAddress.isAllZero()? m_ARP->interfaces()[interfaceIndex].address : srcAddress;  // is the source IP auto calculated?
             
       if (destHardwareAddress == NULL)
@@ -842,8 +937,12 @@ namespace fdv
 
     bool processLinkLayerFrame(LinkLayerReceiveFrame* frame)
     {
+      #ifdef TCPVERBOSE
+      serial.write_P(PSTR("IP::processLinkLayerFrame")); cout << endl;
+      #endif
       if (frame->type_length == 0x0800)
       {
+
         Datagram datagram;
 
         // VER | HLEN
@@ -854,7 +953,7 @@ namespace fdv
         if (headerLength < 20 || headerLength > frame->dataLength)
         {
           #ifdef TCPVERBOSE
-          serial.write_P(PSTR("Protocol_IP, invalid headerLength")); cout << endl;
+          serial.write_P(PSTR("IP::processLinkLayerFrame: invalid head len")); cout << endl;
           #endif
           return false; // invalid headerLength                   
         }
@@ -862,10 +961,10 @@ namespace fdv
         frame->readByte();
         // Total Length
         uint16_t totalLength = frame->readWord();
-        if (totalLength < headerLength || totalLength > frame->dataLength)  // fdv1
+        if (totalLength < headerLength || totalLength > frame->dataLength)
         {
           #ifdef TCPVERBOSE
-          serial.write_P(PSTR("Protocol_IP, invalid totalLength")); cout << endl;
+          serial.write_P(PSTR("IP::processLinkLayerFrame: invalid len")); cout << endl;
           #endif
           return false; // invalid totalLength
         }          
@@ -889,10 +988,23 @@ namespace fdv
         for (uint8_t i = 20; i != headerLength; ++i)
           frame->readByte();
 
+        #ifdef TCPVERBOSE
+        serial.write_P(PSTR("IP::processLinkLayerFrame: src: "));
+        serial.writeIPv4(&datagram.sourceAddress[0]);
+        serial.write_P(PSTR(" dst: "));
+        serial.writeIPv4(&datagram.destAddress[0]);
+        cout << endl;
+        #endif
+
         // data
         datagram.dataLength = totalLength - headerLength;
         if (getFreeMem() - 200 < datagram.dataLength)
+        {
+          #ifdef TCPVERBOSE
+          serial.write_P(PSTR("IP:processLinkLayerFrame: cannot allocate")); cout << endl;
+          #endif
           return false; // cannot allocate
+        }
         SimpleBuffer<uint8_t> dataBuffer(datagram.dataLength);
         if (dataBuffer.get() == NULL)
             return false; // cannot allocate
@@ -908,10 +1020,14 @@ namespace fdv
             break;
           }
 
+        // add address to ARP
+        m_ARP->addCacheTableItem(Protocol_ARP::Item(datagram.sourceAddress, frame->srcAddress, seconds()));
+
         if (rightDest)
         {          
-          // add address to ARP
-          m_ARP->addCacheTableItem(Protocol_ARP::Item(datagram.sourceAddress, frame->srcAddress, seconds()));
+          #ifdef TCPVERBOSE
+          serial.write_P(PSTR("IP::processLinkLayerFrame: right dst")); cout << endl;
+          #endif
           
           // send to listeners
           for (uint8_t i = 0; i != m_listeners.size(); ++i)
@@ -921,14 +1037,23 @@ namespace fdv
         else if (m_routingEnabled)
         {
           // perform routing
-          send(datagram.sourceAddress, datagram.destAddress, datagram.protocol, DataList(NULL, datagram.data, datagram.dataLength));
+          #ifdef TCPVERBOSE
+          serial.write_P(PSTR("IP::processLinkLayerFrame: route")); cout << endl;
+          #endif
+          send(datagram.sourceAddress, datagram.destAddress, datagram.protocol, DataList(NULL, datagram.data, datagram.dataLength), true);
         }
 
         return true;
       }
       else
+      {
+        #ifdef TCPVERBOSE
+        serial.write_P(PSTR("IP::processLinkLayerFrame: not IP")); cout << endl;
+        #endif
         return false; // not IP
+      }
     }
+
 
     void receive()
     {
@@ -936,16 +1061,19 @@ namespace fdv
         m_ARP->interfaces()[i].interface->recvFrame();
     }      
     
+
     Array<Protocol_ARP::InterfaceEntry, Protocol_ARP::MAXINTERFACES> const& interfaces() const
     {
       return m_ARP->interfaces();
     }   
     
+
     void routingEnabled(bool value)
     {
       m_routingEnabled = value;
     }  
     
+
     bool routingEnabled() const
     {
       return m_routingEnabled;
@@ -984,11 +1112,17 @@ namespace fdv
         
     bool processIPDatagram(Protocol_IP::Datagram* datagram)
     {
+      #ifdef TCPVERBOSE
+      serial.write_P(PSTR("ICMP::processIPDatagram")); cout << endl;
+      #endif
       if (datagram->protocol == 0x01 && datagram->dataLength >= 8)
       {
         uint8_t* databuf = static_cast<uint8_t*>(datagram->data);
         if (databuf[0] == 8 && databuf[1] == 0)       // received Echo request
         {
+          #ifdef TCPVERBOSE
+          serial.write_P(PSTR("ICMP::processIPDatagram: ECHO req")); cout << endl;
+          #endif
           // set ICMP type = 0 (echo reply), code = 0
           databuf[0] = 0;
           databuf[1] = 0;
@@ -1000,11 +1134,14 @@ namespace fdv
           databuf[2] = checksum >> 8;
           databuf[3] = checksum & 0xFF;
           // send back datagram
-          m_IP->send(datagram->destAddress, datagram->sourceAddress, 0x01, DataList(NULL, datagram->data, datagram->dataLength));
+          m_IP->send(datagram->destAddress, datagram->sourceAddress, 0x01, DataList(NULL, datagram->data, datagram->dataLength), false);
           return true;
         }
         else if (databuf[0] == 0 && databuf[1] == 0)  // received Echo reply
         {
+          #ifdef TCPVERBOSE
+          serial.write_P(PSTR("ICMP::processIPDatagram: ECHO reply")); cout << endl;
+          #endif
           m_receivedID = ((uint16_t)databuf[4] << 8) | databuf[5];
           return true;
         }
@@ -1037,10 +1174,10 @@ namespace fdv
       data[2] = checksum >> 8;
       data[3] = checksum & 0xFF;      
       // send Echo Request
-      m_IP->send(IPAddress(0, 0, 0, 0), dest, 0x01, DataList(NULL, &data[0], sizeof(data)));
+      m_IP->send(IPAddress(0, 0, 0, 0), dest, 0x01, DataList(NULL, &data[0], sizeof(data)), false);
       
       // wait for reply
-      SoftTimeOut timeOut(MAXECHOREPLYTIME);
+      TimeOut timeOut(MAXECHOREPLYTIME);
       while (m_receivedID != id && !timeOut)
         m_IP->receive();
       
@@ -1118,8 +1255,8 @@ namespace fdv
     bool processIPDatagram(Protocol_IP::Datagram* datagram)
     {
       #ifdef TCPVERBOSE
-      serial.write_P(PSTR("processIPDatagram from ")); serial.writeIPv4(datagram->sourceAddress.data()); cout << endl;
-      serial.write_P(PSTR("  prot = ")); cout << (uint16_t)datagram->protocol << endl;
+      serial.write_P(PSTR("UDP::processIPDatagram: src: ")); serial.writeIPv4(datagram->sourceAddress.data()); cout << endl;
+      serial.write_P(PSTR("UDP::processIPDatagram: prot: ")); cout << (uint16_t)datagram->protocol << endl;
       //cout << "  len  = " << datagram->dataLength << endl;
       #endif
       if (datagram->protocol == 0x11 && datagram->dataLength >= 8)
@@ -1148,12 +1285,12 @@ namespace fdv
       return send(m_lastSrcUsedPort, destPort, destAddress, data);
     }
     
+
     bool send(uint16_t srcPort, uint16_t destPort, IPAddress const& destAddress, DataList const& data)
     {
       
       #ifdef TCPVERBOSE
-      serial.write_P(PSTR("UDP Send to ")); serial.writeIPv4(destAddress.data()); cout << endl;
-      serial.write_P(PSTR("mem      = ")); cout << (uint16_t)getFreeMem() << endl;
+      serial.write_P(PSTR("UDP::Send: dst: ")); serial.writeIPv4(destAddress.data()); cout << endl;
       #endif
 
       PseudoHeader pseudoHeader;
@@ -1187,7 +1324,7 @@ namespace fdv
       udphead[6] = checksum >> 8;
       udphead[7] = checksum & 0xFF;
       
-      return m_IP->send(IPAddress(0, 0, 0, 0), destAddress, 0x11, datagram);
+      return m_IP->send(IPAddress(0, 0, 0, 0), destAddress, 0x11, datagram, false);
     }     
     
     

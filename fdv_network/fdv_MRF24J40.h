@@ -622,14 +622,16 @@ namespace fdv
     // channel: 0..15 (channel_11..channel_26) : channel can be changed using setChannel
     MRF24J40(HardwareSPIMaster* spi, bool sharedSPI,
 	           uint16_t PANID, LinkAddress const* address, Channel channel, 
-			       DeviceType deviceType, Speed speed, PGM_P key)
+			       DeviceType deviceType, Speed speed, PGM_P key, bool allowFloodMsg, bool waitAckOnFloodMsg)
       : m_SPI(spi),
         m_sharedSPI(sharedSPI),
         m_channel(channel),
         m_deviceType(deviceType),
         m_PANID(PANID),
         m_address(*address),
-        m_speed(speed)
+        m_speed(speed), 
+        m_allowFloodMsg(allowFloodMsg),
+        m_waitAckOnFloodMsg(waitAckOnFloodMsg)
     {		  
       Random::reseed(m_address[0]);
       prepareKey(key);
@@ -816,7 +818,7 @@ namespace fdv
     }
 
 
-    #ifdef VERBOSE
+    #ifdef MRF24J40_DEBUG
     void dumpRegisters()
     {
       // short registers
@@ -910,6 +912,10 @@ namespace fdv
     SendResult directSendFrame(MRFSendFrame const* frame, AckType ackType, uint16_t messageID, bool isACK = false, CMD command = CMD_NONE, uint8_t const* extraData = NULL, uint8_t extraDataLen = 0, bool flooded = false)
     {
       
+      #ifdef MRF24J40_DEBUG
+      serial.write_P(PSTR("MRF24J40::directSendFrame: send msgid: ")); cout << (uint16_t)messageID << endl;
+      #endif
+
       uint8_t const payloadlen = (frame->dataList? frame->dataList->calcLength() : 0);
       
       if (payloadlen > MAXPAYLOAD)
@@ -920,10 +926,6 @@ namespace fdv
       // cannot request ack when sending broadcast messages
       ackType = (frame->destAddress == 0xFF? ACK_NONE : ackType);
       
-      #ifdef VERBOSE
-      cout << "send msg " << (uint16_t)messageID << endl;
-      #endif   
-            
       // 2 = FCF    1 = sequence number    2 = dest PANID    2 = destination address    2 = source address      
       uint8_t const hdrlen = 2 + 1 + 2 + 2 + 2;
       
@@ -949,7 +951,7 @@ namespace fdv
         writeLongAddress(wpos++, framelen);
         
         // write Frame control field	    
-  		  writeLongAddress(wpos++, FCF & 0xFF); // low byte      
+  		  writeLongAddress(wpos++, FCF & 0xFF);          // low byte      
   		  writeLongAddress(wpos++, (FCF >> 8) & 0xFF);   // high byte      
   		  
         // Sequence number
@@ -964,7 +966,7 @@ namespace fdv
         writeLongAddress(wpos++, seqnum);
         
         // Destination PANID
-  	    writeLongAddress(wpos++, m_PANID & 0xFF); // low byte      
+  	    writeLongAddress(wpos++, m_PANID & 0xFF);        // low byte      
   	    writeLongAddress(wpos++, (m_PANID >> 8) & 0xFF); // high byte      
         
         // Destination address (broadcast)
@@ -1270,8 +1272,8 @@ namespace fdv
         
       }    // end of RX stop
     
-      #ifdef VERBOSE
-      cout << "recv msg " << (uint16_t)messageID << endl;
+      #ifdef MRF24J40_DEBUG
+      serial.write_P(PSTR("MRF24J40::recvFrame: recv msgid: ")); cout << (uint16_t)messageID << endl;
       #endif
 
       // already received?
@@ -1284,20 +1286,20 @@ namespace fdv
       m_receivedMessages.add(ReceivedMessageID(frame.srcAddress, messageID));
     
       // not for me, flood if necessary
-      if (frame.destAddress != m_address[0] && frame.destAddress != 0xFF)
+      if (m_allowFloodMsg && frame.destAddress != m_address[0] && frame.destAddress != 0xFF)
       {
         // if not ACK and this packet requires an ACK then wait for receiver ACK
         uint16_t ackMsgID;
-        if (!isACK && acktype == ACK_SOFTWARE && recvSoftACK(frame.srcAddress, messageID, 60, &ackMsgID)) // wait ACK directed to source of this message
+        if (m_waitAckOnFloodMsg && !isACK && acktype == ACK_SOFTWARE && recvSoftACK(frame.srcAddress, messageID, 60, &ackMsgID)) // wait ACK directed to source of this message
         {
           // ACK received, replicate ACK
           delay_ms( 0 + Random::nextUInt16(0, 60) ); // wait random time
-          sendSoftACK(frame.destAddress, frame.srcAddress, messageID, ackMsgID);
+          sendSoftACK(frame.destAddress, frame.srcAddress, messageID, ackMsgID, true);
           return; // discard
         }
         // ACK not received or not necessary, maybe actual recipient didn't receive the message. Resend the message.
-        #ifdef VERBOSE
-        serial.write_P(PSTR("recvFrame: perform flood")); cout << endl;
+        #ifdef MRF24J40_DEBUG
+        serial.write_P(PSTR("MRF24J40::recvFrame: perform flood")); cout << endl;
         #endif
         delay_ms( 0 + Random::nextUInt16(0, 60) ); // wait random time
         DataList data(NULL, frame.payload, frame.dataLength);
@@ -1319,7 +1321,7 @@ namespace fdv
 
       // resend broadcast messages
       // This is the way broadcast message uses to global flooding
-      if (frame.destAddress == 0xFF)
+      if (m_allowFloodMsg && frame.destAddress == 0xFF)
       {
         delay_ms( 0 + Random::nextUInt16(0, 60) ); // wait random time
         DataList data(NULL, frame.payload, frame.dataLength);
@@ -1424,18 +1426,18 @@ namespace fdv
     static uint8_t const ACKPADDINGSIZE = 0; // todo: fine tune!
     
     
-    void sendSoftACK(uint8_t srcAddress, uint8_t dstAddress, uint16_t messageID, uint16_t ackMsgID)
+    void sendSoftACK(uint8_t srcAddress, uint8_t dstAddress, uint16_t messageID, uint16_t ackMsgID, bool flooded = false)
     {
 
-      #ifdef VERBOSE
-      cout << "send ack " << (uint16_t)ackMsgID << ":" << (uint16_t)messageID << endl;
+      #ifdef MRF24J40_DEBUG
+      serial.write_P(PSTR("MRF24J40::sendSoftACK: send ack ")); cout << (uint16_t)ackMsgID << ":" << (uint16_t)messageID << endl;
       #endif
       
       // 2 = FCF    1 = sequence number    2 = dest PANID    2 = destination address    2 = source address
       uint8_t const hdrlen = 2 + 1 + 2 + 2 + 2;
       
-      // +2 is for message-id, +2 checksum (0x000), +2 protocol (0x000), +2 reply message-id, +1 is for actual destination
-      uint8_t const framelen = hdrlen + 2 + 2 + 2 + 2 + 1 + ACKPADDINGSIZE;
+      // +2 is for message-id, +2 checksum (0x000), +2 protocol (0x000), +1 is for actual destination, +2 reply message-id
+      uint8_t const framelen = hdrlen + 2 + 2 + 2 + 1 + 2 + ACKPADDINGSIZE;
 
       // calculate FCF (frame control field)
       uint16_t const FCF = FRAMECTRL_PANIDCOMP |
@@ -1459,7 +1461,7 @@ namespace fdv
         writeLongAddress(wpos++, (FCF >> 8) & 0xFF);   // high byte
           
         // Sequence number
-        writeLongAddress(wpos++, 0xFF); // soft-ack marker
+        writeLongAddress(wpos++, (1 << 0) | (flooded? 1 << 6 : 0)); // soft-ack marker
           
         // Destination PANID
         writeLongAddress(wpos++, m_PANID & 0xFF);        // low byte
@@ -1558,12 +1560,6 @@ namespace fdv
           bool const isFlooded = seqnum & (1 << 6);
           #endif
           
-          // Check sequence number
-          if (!isACK) // isn't an ACK?
-          {
-            continue; // no, discard
-          }          
-
           #ifdef MRFDEBUG_ACCEPTONLYFLOODEDMESSAGES
           if (!isFlooded)
             continue; // discard if this is not flooded (for debug purposes only)
@@ -1589,8 +1585,9 @@ namespace fdv
           uint8_t const destAddress = readLongAddress(rpos++);
   
           // ACK message id
+          uint16_t ackMsgID_ = readLongAddress(rpos) | ((uint16_t)readLongAddress(rpos + 1) << 8);
           if (ackMsgID)
-            *ackMsgID = readLongAddress(rpos) | ((uint16_t)readLongAddress(rpos + 1) << 8);
+            *ackMsgID = ackMsgID_;
           rpos += 2;
 
           // checksum (ignore), always 0 for ACKs
@@ -1602,9 +1599,19 @@ namespace fdv
           // read message-id
           uint16_t const rmessageID = readLongAddress(rpos) | ((uint16_t)readLongAddress(rpos + 1) << 8);
           rpos += 2;
-          
-          #ifdef VERBOSE
-          cout << "rcv ack XXX:" << (uint16_t)rmessageID << endl;
+  
+          // Check sequence number
+          if (!isACK) // isn't an ACK?
+          {
+            #ifdef MRF24J40_DEBUG
+            serial.write_P(PSTR("wait ack BUT recv msg ")); cout << (uint16_t)ackMsgID_;
+            serial.write_P(PSTR(" src=")); cout << (uint16_t)srcAddress << endl;
+            #endif
+            continue; // no, discard
+          }
+        
+          #ifdef MRF24J40_DEBUG
+          serial.write_P(PSTR("MRF24J40::recvSoftACK: rcv ack XXX:")); cout << (uint16_t)rmessageID << endl;
           #endif
 
           if (rmessageID == messageID && destAddress == waiterAddress)
@@ -1787,6 +1794,8 @@ namespace fdv
     Array<ILinkLayerListener*, MAXLISTENERS> m_listeners; // upper layer listeners
     uint32_t           m_keyz;
     uint32_t           m_keyw;
+    bool               m_allowFloodMsg;
+    bool               m_waitAckOnFloodMsg;
     
 	  // status
     bool     m_available;	  
