@@ -2,7 +2,7 @@
 # Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
 # Copyright (c) 2013 Fabrizio Di Vittorio.
 # All rights reserved.
- 
+
 # GNU GPL LICENSE
 #
 # This module is free software; you can redistribute it and/or
@@ -46,12 +46,12 @@ namespace fdv
   OneWire ow = OneWire( &PinB0 );
   while (ow.search())
   {
-    for (uint8_t i=0; i<8; ++i)
-      serial << (uint16_t)ow.currentROMCode()[i] << ' ';
-    serial << endl;
+  for (uint8_t i=0; i<8; ++i)
+  serial << (uint16_t)ow.currentROMCode()[i] << ' ';
+  serial << endl;
   }
 
- */
+  */
 
 
   class OneWire

@@ -1,35 +1,35 @@
 /* Arduino SdFat Library
- * Copyright (C) 2009 by William Greiman
- *
- * This file is part of the Arduino SdFat Library
- *
- * This Library is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This Library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with the Arduino SdFat Library.  If not, see
- * <http://www.gnu.org/licenses/>.
- */
+* Copyright (C) 2009 by William Greiman
+*
+* This file is part of the Arduino SdFat Library
+*
+* This Library is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This Library is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with the Arduino SdFat Library.  If not, see
+* <http://www.gnu.org/licenses/>.
+*/
 #ifndef SdFat_h
 #define SdFat_h
 /**
- * \file
- * SdFile and SdVolume classes
- */
+* \file
+* SdFile and SdVolume classes
+*/
 #include <avr/pgmspace.h>
 #include "Sd2Card.h"
 #include "FatStructs.h"
 //------------------------------------------------------------------------------
 /**
- * Allow use of deprecated functions if non-zero
- */
+* Allow use of deprecated functions if non-zero
+*/
 #define ALLOW_DEPRECATED_FUNCTIONS 1
 //------------------------------------------------------------------------------
 // forward declaration since SdVolume is used in SdFile
@@ -128,69 +128,69 @@ uint16_t const FAT_DEFAULT_DATE = ((2000 - 1980) << 9) | (1 << 5) | 1;
 uint16_t const FAT_DEFAULT_TIME = (1 << 11);
 //------------------------------------------------------------------------------
 /**
- * \class SdFile
- * \brief Access FAT16 and FAT32 files on SD and SDHC cards.
- */
+* \class SdFile
+* \brief Access FAT16 and FAT32 files on SD and SDHC cards.
+*/
 class SdFile/* : public Print */{
- public:
+public:
   /** Create an instance of SdFile. */
   SdFile(void) : type_(FAT_FILE_TYPE_CLOSED) {}
   /**
-   * writeError is set to true if an error occurs during a write().
-   * Set writeError to false before calling print() and/or write() and check
-   * for true after calls to print() and/or write().
-   */
+  * writeError is set to true if an error occurs during a write().
+  * Set writeError to false before calling print() and/or write() and check
+  * for true after calls to print() and/or write().
+  */
   bool writeError;
   /**
-   * Cancel unbuffered reads for this file.
-   * See setUnbufferedRead()
-   */
+  * Cancel unbuffered reads for this file.
+  * See setUnbufferedRead()
+  */
   void clearUnbufferedRead(void) {
     flags_ &= ~F_FILE_UNBUFFERED_READ;
   }
   uint8_t close(void);
   uint8_t contiguousRange(uint32_t* bgnBlock, uint32_t* endBlock);
   uint8_t createContiguous(SdFile* dirFile,
-          const char* fileName, uint32_t size);
+    const char* fileName, uint32_t size);
   /** \return The current cluster number for a file or directory. */
   uint32_t curCluster(void) const {return curCluster_;}
   /** \return The current position for a file or directory. */
   uint32_t curPosition(void) const {return curPosition_;}
   /**
-   * Set the date/time callback function
-   *
-   * \param[in] dateTime The user's call back function.  The callback
-   * function is of the form:
-   *
-   * \code
-   * void dateTime(uint16_t* date, uint16_t* time) {
-   *   uint16_t year;
-   *   uint8_t month, day, hour, minute, second;
-   *
-   *   // User gets date and time from GPS or real-time clock here
-   *
-   *   // return date using FAT_DATE macro to format fields
-   *   *date = FAT_DATE(year, month, day);
-   *
-   *   // return time using FAT_TIME macro to format fields
-   *   *time = FAT_TIME(hour, minute, second);
-   * }
-   * \endcode
-   *
-   * Sets the function that is called when a file is created or when
-   * a file's directory entry is modified by sync(). All timestamps,
-   * access, creation, and modify, are set when a file is created.
-   * sync() maintains the last access date and last modify date/time.
-   *
-   * See the timestamp() function.
-   */
+  * Set the date/time callback function
+  *
+  * \param[in] dateTime The user's call back function.  The callback
+  * function is of the form:
+  *
+  * \code
+  * void dateTime(uint16_t* date, uint16_t* time) {
+  *   uint16_t year;
+  *   uint8_t month, day, hour, minute, second;
+  *
+  *   // User gets date and time from GPS or real-time clock here
+  *
+  *   // return date using FAT_DATE macro to format fields
+  *   *date = FAT_DATE(year, month, day);
+  *
+  *   // return time using FAT_TIME macro to format fields
+  *   *time = FAT_TIME(hour, minute, second);
+  * }
+  * \endcode
+  *
+  * Sets the function that is called when a file is created or when
+  * a file's directory entry is modified by sync(). All timestamps,
+  * access, creation, and modify, are set when a file is created.
+  * sync() maintains the last access date and last modify date/time.
+  *
+  * See the timestamp() function.
+  */
   static void dateTimeCallback(
     void (*dateTime)(uint16_t* date, uint16_t* time)) {
-    dateTime_ = dateTime;
+      dateTime_ = dateTime;
   }
   /**
-   * Cancel the date/time callback function.
-   */
+  * Cancel the date/time callback function.
+  */
   static void dateTimeCallbackCancel(void) {
     // use explicit zero since NULL is not defined for Sanguino
     dateTime_ = 0;
@@ -228,11 +228,11 @@ class SdFile/* : public Print */{
   static void printFatTime(uint16_t fatTime);
   static void printTwoDigits(uint8_t v);
   /**
-   * Read the next byte from a file.
-   *
-   * \return For success read returns the next byte in the file as an int.
-   * If an error occurs or end of file is reached -1 is returned.
-   */
+  * Read the next byte from a file.
+  *
+  * \return For success read returns the next byte in the file as an int.
+  * If an error occurs or end of file is reached -1 is returned.
+  */
   int16_t read(void) {
     uint8_t b;
     return read(&b, 1) == 1 ? b : -1;
@@ -252,28 +252,28 @@ class SdFile/* : public Print */{
     return seekSet(curPosition_ + pos);
   }
   /**
-   *  Set the files current position to end of file.  Useful to position
-   *  a file for append. See seekSet().
-   */
+  *  Set the files current position to end of file.  Useful to position
+  *  a file for append. See seekSet().
+  */
   uint8_t seekEnd(void) {return seekSet(fileSize_);}
   uint8_t seekSet(uint32_t pos);
   /**
-   * Use unbuffered reads to access this file.  Used with Wave
-   * Shield ISR.  Used with Sd2Card::partialBlockRead() in WaveRP.
-   *
-   * Not recommended for normal applications.
-   */
+  * Use unbuffered reads to access this file.  Used with Wave
+  * Shield ISR.  Used with Sd2Card::partialBlockRead() in WaveRP.
+  *
+  * Not recommended for normal applications.
+  */
   void setUnbufferedRead(void) {
     if (isFile()) flags_ |= F_FILE_UNBUFFERED_READ;
   }
   uint8_t timestamp(uint8_t flag, uint16_t year, uint8_t month, uint8_t day,
-          uint8_t hour, uint8_t minute, uint8_t second);
+    uint8_t hour, uint8_t minute, uint8_t second);
   uint8_t sync(void);
   /** Type of this SdFile.  You should use isFile() or isDir() instead of type()
-   * if possible.
-   *
-   * \return The file or directory type.
-   */
+  * if possible.
+  *
+  * \return The file or directory type.
+  */
   uint8_t type(void) const {return type_;}
   uint8_t truncate(uint32_t size);
   /** \return Unbuffered read flag. */
@@ -287,56 +287,56 @@ class SdFile/* : public Print */{
   void write(const char* str);
   void write_P(PGM_P str);
   void writeln_P(PGM_P str);
-//------------------------------------------------------------------------------
+  //------------------------------------------------------------------------------
 #if ALLOW_DEPRECATED_FUNCTIONS
-// Deprecated functions  - suppress cpplint warnings with NOLINT comment
+  // Deprecated functions  - suppress cpplint warnings with NOLINT comment
   /** \deprecated Use:
-   * uint8_t SdFile::contiguousRange(uint32_t* bgnBlock, uint32_t* endBlock);
-   */
+  * uint8_t SdFile::contiguousRange(uint32_t* bgnBlock, uint32_t* endBlock);
+  */
   uint8_t contiguousRange(uint32_t& bgnBlock, uint32_t& endBlock) {  // NOLINT
     return contiguousRange(&bgnBlock, &endBlock);
   }
- /** \deprecated Use:
-   * uint8_t SdFile::createContiguous(SdFile* dirFile,
-   *   const char* fileName, uint32_t size)
-   */
+  /** \deprecated Use:
+  * uint8_t SdFile::createContiguous(SdFile* dirFile,
+  *   const char* fileName, uint32_t size)
+  */
   uint8_t createContiguous(SdFile& dirFile,  // NOLINT
     const char* fileName, uint32_t size) {
-    return createContiguous(&dirFile, fileName, size);
+      return createContiguous(&dirFile, fileName, size);
   }
 
   /**
-   * \deprecated Use:
-   * static void SdFile::dateTimeCallback(
-   *   void (*dateTime)(uint16_t* date, uint16_t* time));
-   */
+  * \deprecated Use:
+  * static void SdFile::dateTimeCallback(
+  *   void (*dateTime)(uint16_t* date, uint16_t* time));
+  */
   static void dateTimeCallback(
     void (*dateTime)(uint16_t& date, uint16_t& time)) {  // NOLINT
-    oldDateTime_ = dateTime;
-    dateTime_ = dateTime ? oldToNew : 0;
+      oldDateTime_ = dateTime;
+      dateTime_ = dateTime ? oldToNew : 0;
   }
   /** \deprecated Use: uint8_t SdFile::dirEntry(dir_t* dir); */
   uint8_t dirEntry(dir_t& dir) {return dirEntry(&dir);}  // NOLINT
   /** \deprecated Use:
-   * uint8_t SdFile::makeDir(SdFile* dir, const char* dirName);
-   */
+  * uint8_t SdFile::makeDir(SdFile* dir, const char* dirName);
+  */
   uint8_t makeDir(SdFile& dir, const char* dirName) {  // NOLINT
     return makeDir(&dir, dirName);
   }
   /** \deprecated Use:
-   * uint8_t SdFile::open(SdFile* dirFile, const char* fileName, uint8_t oflag);
-   */
+  * uint8_t SdFile::open(SdFile* dirFile, const char* fileName, uint8_t oflag);
+  */
   uint8_t open(SdFile& dirFile, // NOLINT
     const char* fileName, uint8_t oflag) {
-    return open(&dirFile, fileName, oflag);
+      return open(&dirFile, fileName, oflag);
   }
   /** \deprecated  Do not use in new apps */
   uint8_t open(SdFile& dirFile, const char* fileName) {  // NOLINT
     return open(dirFile, fileName, O_RDWR);
   }
   /** \deprecated Use:
-   * uint8_t SdFile::open(SdFile* dirFile, uint16_t index, uint8_t oflag);
-   */
+  * uint8_t SdFile::open(SdFile* dirFile, uint16_t index, uint8_t oflag);
+  */
   uint8_t open(SdFile& dirFile, uint16_t index, uint8_t oflag) {  // NOLINT
     return open(&dirFile, index, oflag);
   }
@@ -346,14 +346,14 @@ class SdFile/* : public Print */{
   /** \deprecated Use: int8_t SdFile::readDir(dir_t* dir); */
   int8_t readDir(dir_t& dir) {return readDir(&dir);}  // NOLINT
   /** \deprecated Use:
-   * static uint8_t SdFile::remove(SdFile* dirFile, const char* fileName);
-   */
+  * static uint8_t SdFile::remove(SdFile* dirFile, const char* fileName);
+  */
   static uint8_t remove(SdFile& dirFile, const char* fileName) {  // NOLINT
     return remove(&dirFile, fileName);
   }
-//------------------------------------------------------------------------------
-// rest are private
- private:
+  //------------------------------------------------------------------------------
+  // rest are private
+private:
   static void (*oldDateTime_)(uint16_t& date, uint16_t& time);  // NOLINT
   static void oldToNew(uint16_t* date, uint16_t* time) {
     uint16_t d;
@@ -363,7 +363,7 @@ class SdFile/* : public Print */{
     *time = t;
   }
 #endif  // ALLOW_DEPRECATED_FUNCTIONS
- private:
+private:
   // bits defined in flags_
   // should be 0XF
   static uint8_t const F_OFLAG = (O_ACCMODE | O_APPEND | O_SYNC);
@@ -374,7 +374,7 @@ class SdFile/* : public Print */{
   // sync of directory entry required
   static uint8_t const F_FILE_DIR_DIRTY = 0X80;
 
-// make sure F_OFLAG is ok
+  // make sure F_OFLAG is ok
 #if ((F_UNUSED | F_FILE_UNBUFFERED_READ | F_FILE_DIR_DIRTY) & F_OFLAG)
 #error flags_ bits conflict
 #endif  // flags_ bits
@@ -402,50 +402,50 @@ class SdFile/* : public Print */{
 //==============================================================================
 // SdVolume class
 /**
- * \brief Cache for an SD data block
- */
+* \brief Cache for an SD data block
+*/
 union cache_t {
-           /** Used to access cached file data blocks. */
+  /** Used to access cached file data blocks. */
   uint8_t  data[512];
-           /** Used to access cached FAT16 entries. */
+  /** Used to access cached FAT16 entries. */
   uint16_t fat16[256];
-           /** Used to access cached FAT32 entries. */
+  /** Used to access cached FAT32 entries. */
   uint32_t fat32[128];
-           /** Used to access cached directory entries. */
+  /** Used to access cached directory entries. */
   dir_t    dir[16];
-           /** Used to access a cached MasterBoot Record. */
+  /** Used to access a cached MasterBoot Record. */
   mbr_t    mbr;
-           /** Used to access to a cached FAT boot sector. */
+  /** Used to access to a cached FAT boot sector. */
   fbs_t    fbs;
 };
 //------------------------------------------------------------------------------
 /**
- * \class SdVolume
- * \brief Access FAT16 and FAT32 volumes on SD and SDHC cards.
- */
+* \class SdVolume
+* \brief Access FAT16 and FAT32 volumes on SD and SDHC cards.
+*/
 class SdVolume {
- public:
+public:
   /** Create an instance of SdVolume */
   SdVolume(void) :allocSearchStart_(2), fatType_(0) {}
   /** Clear the cache and returns a pointer to the cache.  Used by the WaveRP
-   *  recorder to do raw write to the SD card.  Not for normal apps.
-   */
+  *  recorder to do raw write to the SD card.  Not for normal apps.
+  */
   static uint8_t* cacheClear(void) {
     cacheFlush();
     cacheBlockNumber_ = 0XFFFFFFFF;
     return cacheBuffer_.data;
   }
   /**
-   * Initialize a FAT volume.  Try partition one first then try super
-   * floppy format.
-   *
-   * \param[in] dev The Sd2Card where the volume is located.
-   *
-   * \return The value one, true, is returned for success and
-   * the value zero, false, is returned for failure.  Reasons for
-   * failure include not finding a valid partition, not finding a valid
-   * FAT file system or an I/O error.
-   */
+  * Initialize a FAT volume.  Try partition one first then try super
+  * floppy format.
+  *
+  * \param[in] dev The Sd2Card where the volume is located.
+  *
+  * \return The value one, true, is returned for success and
+  * the value zero, false, is returned for failure.  Reasons for
+  * failure include not finding a valid partition, not finding a valid
+  * FAT file system or an I/O error.
+  */
   uint8_t init(Sd2Card* dev) { return init(dev, 1) ? true : init(dev, 0);}
   uint8_t init(Sd2Card* dev, uint8_t part);
 
@@ -469,11 +469,11 @@ class SdVolume {
   /** \return The number of entries in the root directory for FAT16 volumes. */
   uint32_t rootDirEntryCount(void) const {return rootDirEntryCount_;}
   /** \return The logical block number for the start of the root directory
-       on FAT16 volumes or the first cluster number on FAT32 volumes. */
+  on FAT16 volumes or the first cluster number on FAT32 volumes. */
   uint32_t rootDirStart(void) const {return rootDirStart_;}
   /** return a pointer to the Sd2Card object for this volume */
   static Sd2Card* sdCard(void) {return sdCard_;}
-//------------------------------------------------------------------------------
+  //------------------------------------------------------------------------------
 #if ALLOW_DEPRECATED_FUNCTIONS
   // Deprecated functions  - suppress cpplint warnings with NOLINT comment
   /** \deprecated Use: uint8_t SdVolume::init(Sd2Card* dev); */
@@ -484,8 +484,8 @@ class SdVolume {
     return init(&dev, part);
   }
 #endif  // ALLOW_DEPRECATED_FUNCTIONS
-//------------------------------------------------------------------------------
-  private:
+  //------------------------------------------------------------------------------
+private:
   // Allow SdFile access to SdVolume private data.
   friend class SdFile;
 
@@ -499,7 +499,7 @@ class SdVolume {
   static Sd2Card* sdCard_;            // Sd2Card object for cache
   static uint8_t cacheDirty_;         // cacheFlush() will write block if true
   static uint32_t cacheMirrorBlock_;  // block number for mirror FAT
-//
+  //
   uint32_t allocSearchStart_;   // start cluster for alloc search
   uint8_t blocksPerCluster_;    // cluster size in blocks
   uint32_t blocksPerFat_;       // FAT size in blocks
@@ -514,11 +514,11 @@ class SdVolume {
   //----------------------------------------------------------------------------
   uint8_t allocContiguous(uint32_t count, uint32_t* curCluster);
   uint8_t blockOfCluster(uint32_t position) const {
-          return (position >> 9) & (blocksPerCluster_ - 1);}
+    return (position >> 9) & (blocksPerCluster_ - 1);}
   uint32_t clusterStartBlock(uint32_t cluster) const {
-           return dataStartBlock_ + ((cluster - 2) << clusterSizeShift_);}
+    return dataStartBlock_ + ((cluster - 2) << clusterSizeShift_);}
   uint32_t blockNumber(uint32_t cluster, uint32_t position) const {
-           return clusterStartBlock(cluster) + blockOfCluster(position);}
+    return clusterStartBlock(cluster) + blockOfCluster(position);}
   static uint8_t cacheFlush(void);
   static uint8_t cacheRawBlock(uint32_t blockNumber, uint8_t action);
   static void cacheSetDirty(void) {cacheDirty_ |= CACHE_FOR_WRITE;}

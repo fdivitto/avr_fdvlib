@@ -2,7 +2,7 @@
 # Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
 # Copyright (c) 2013 Fabrizio Di Vittorio.
 # All rights reserved.
- 
+
 # GNU GPL LICENSE
 #
 # This module is free software; you can redistribute it and/or
@@ -27,19 +27,19 @@
 
 
 #if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega328__) || defined (__AVR_ATmega168__) || defined (__AVR_ATmega168P__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega88P__)
-  #define FDV_ATMEGA88_328
+#define FDV_ATMEGA88_328
 #endif
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-  #define FDV_ATMEGA1280_2560
+#define FDV_ATMEGA1280_2560
 #endif
 
 #if defined(__AVR_ATtiny84__) || defined(__AVR_ATtiny84A__)
-  #define FDV_ATTINY84
+#define FDV_ATTINY84
 #endif
 
 #if defined(__AVR_ATtiny85__)
-  #define FDV_ATTINY85
+#define FDV_ATTINY85
 #endif
 
 

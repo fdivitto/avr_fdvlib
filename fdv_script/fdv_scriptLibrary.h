@@ -2,7 +2,7 @@
 # Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
 # Copyright (c) 2013 Fabrizio Di Vittorio.
 # All rights reserved.
- 
+
 # GNU GPL LICENSE
 #
 # This module is free software; you can redistribute it and/or
@@ -61,14 +61,14 @@ namespace fdv
   {
 
     ScriptLibrary(FileSystem* fileSystem) :
-      m_fileSystem(fileSystem)
-    {
-    }
+  m_fileSystem(fileSystem)
+  {
+  }
 
 
   private:
 
-    #ifdef FDV_SCRIPT_SUPPORT_PORTS
+#ifdef FDV_SCRIPT_SUPPORT_PORTS
 
     // portname = 'A', 'B', 'K'...
     // returns associated DDR (DDRA, DDRB, DDRK...)
@@ -94,7 +94,7 @@ namespace fdv
       return CV[portname-65];
     }
 
-    #endif // FDV_SCRIPT_SUPPORT_PORTS
+#endif // FDV_SCRIPT_SUPPORT_PORTS
 
 
     // checks also params count
@@ -129,7 +129,7 @@ namespace fdv
         return true;
       }
 
-      #ifdef FDV_SCRIPT_SUPPORT_PORTS
+#ifdef FDV_SCRIPT_SUPPORT_PORTS
 
       // pinmode_output(STRING pinname)
       // Sets specified pin as output
@@ -248,7 +248,7 @@ namespace fdv
         return true;
       }
 
-      #endif // FDV_SCRIPT_SUPPORT_PORTS
+#endif // FDV_SCRIPT_SUPPORT_PORTS
 
 
       // debug(STRING msg)
@@ -279,30 +279,30 @@ namespace fdv
           return false;
         switch (runtime.vars[0].value.type())
         {
-          case Variant::STRING:
-            result->stringVal() = "S";
-            break;
-          case Variant::FLOAT:
-            result->stringVal() = "F";
-            break;
-          case Variant::UINT8:
-            result->stringVal() = "U8";
-            break;
-          case Variant::UINT16:
-            result->stringVal() = "U16";
-            break;
-          case Variant::UINT32:
-            result->stringVal() = "U32";
-            break;
-          case Variant::ARRAY:
-            result->stringVal() = "A";
-            break;
-          case Variant::REFERENCE:
-            result->stringVal() = "R";
-            break;
-          default:
-            result->stringVal() = "?";
-            break;
+        case Variant::STRING:
+          result->stringVal() = "S";
+          break;
+        case Variant::FLOAT:
+          result->stringVal() = "F";
+          break;
+        case Variant::UINT8:
+          result->stringVal() = "U8";
+          break;
+        case Variant::UINT16:
+          result->stringVal() = "U16";
+          break;
+        case Variant::UINT32:
+          result->stringVal() = "U32";
+          break;
+        case Variant::ARRAY:
+          result->stringVal() = "A";
+          break;
+        case Variant::REFERENCE:
+          result->stringVal() = "R";
+          break;
+        default:
+          result->stringVal() = "?";
+          break;
         }
         return true;
       }
@@ -403,7 +403,7 @@ namespace fdv
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // ARRAY
 
-      #ifdef FDV_SCRIPT_SUPPORT_ARRAY
+#ifdef FDV_SCRIPT_SUPPORT_ARRAY
 
       // UINT8/UINT16/UINT32 = arraysize(ARRAY* array)
       // Returns size of array. This is the same of "sizeof(array)", but must be called as "arraysize(&array)".
@@ -466,13 +466,13 @@ namespace fdv
         return true;
       }
 
-      #endif // FDV_SCRIPT_SUPPORT_ARRAY
+#endif // FDV_SCRIPT_SUPPORT_ARRAY
 
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // STRINGS
 
-      #ifdef FDV_SCRIPT_SUPPORT_STRINGS
+#ifdef FDV_SCRIPT_SUPPORT_STRINGS
 
       // STRING = str(ALLTYPES value [, UINT8 padlen [, STRING padchar="0"]])
       // Converts number to string with optional left pad
@@ -550,7 +550,7 @@ namespace fdv
         return true;
       }
 
-      #endif // FDV_SCRIPT_SUPPORT_STRINGS
+#endif // FDV_SCRIPT_SUPPORT_STRINGS
 
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -572,7 +572,7 @@ namespace fdv
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // DATETIME
 
-      #ifdef FDV_SCRIPT_SUPPORT_DATETIME
+#ifdef FDV_SCRIPT_SUPPORT_DATETIME
 
       // UINT32 = millis()
       // Returns milliseconds since startup or last timer overflow (about 50 days)
@@ -692,11 +692,11 @@ namespace fdv
           if (!checkParamsType(runtime, i, Variant::UINT8 | Variant::UINT16 | Variant::UINT32))
             return false;
         DateTime dt( runtime.vars[0].value.toUInt32(),
-                     runtime.vars[1].value.toUInt32(),
-                     runtime.vars[2].value.toUInt32(),
-                     runtime.vars[3].value.toUInt32(),
-                     runtime.vars[4].value.toUInt32(),
-                     runtime.vars[5].value.toUInt32() );
+          runtime.vars[1].value.toUInt32(),
+          runtime.vars[2].value.toUInt32(),
+          runtime.vars[3].value.toUInt32(),
+          runtime.vars[4].value.toUInt32(),
+          runtime.vars[5].value.toUInt32() );
         result->uint32Val() = dt.getUnixDateTime();
         return true;
       }
@@ -725,13 +725,13 @@ namespace fdv
         return true;
       }
 
-      #endif // FDV_SCRIPT_SUPPORT_DATETIME
+#endif // FDV_SCRIPT_SUPPORT_DATETIME
 
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // FILE SYSTEM
 
-      #ifdef FDV_SCRIPT_SUPPORT_FILESYSTEM
+#ifdef FDV_SCRIPT_SUPPORT_FILESYSTEM
 
       // mkdir(STRING fullpath)
       // Creates a new directory
@@ -801,14 +801,14 @@ namespace fdv
         return true;
       }
 
-      #endif // FDV_SCRIPT_SUPPORT_FILESYSTEM
+#endif // FDV_SCRIPT_SUPPORT_FILESYSTEM
 
 
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // FILES
 
-      #ifdef FDV_SCRIPT_SUPPORT_FILES
+#ifdef FDV_SCRIPT_SUPPORT_FILES
 
       // UINT16 = fopen(STRING fullpath, STRING mode)
       // Opens a file
@@ -829,15 +829,15 @@ namespace fdv
         char m1 = runtime.vars[1].value.stringVal().size() > 1? runtime.vars[1].value.stringVal()[1] : ' ';
         switch (m0)
         {
-          case 'r':
-            mode = File::MD_READ | (m1=='+'? File::MD_WRITE : 0);
-            break;
-          case 'w':
-            mode = File::MD_CREATE | File::MD_TRUNC | File::MD_WRITE | (m1=='+'? File::MD_READ : 0);
-            break;
-          case 'a':
-            mode = File::MD_APPEND | (m1=='+'? File::MD_WRITE : 0);
-            break;
+        case 'r':
+          mode = File::MD_READ | (m1=='+'? File::MD_WRITE : 0);
+          break;
+        case 'w':
+          mode = File::MD_CREATE | File::MD_TRUNC | File::MD_WRITE | (m1=='+'? File::MD_READ : 0);
+          break;
+        case 'a':
+          mode = File::MD_APPEND | (m1=='+'? File::MD_WRITE : 0);
+          break;
         }
         if (mode!=0xFF)
         {
@@ -968,7 +968,7 @@ namespace fdv
         return true;
       }
 
-      #endif // FDV_SCRIPT_SUPPORT_FILES
+#endif // FDV_SCRIPT_SUPPORT_FILES
 
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1132,7 +1132,7 @@ namespace fdv
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // RF link
 
-      #ifdef FDV_SCRIPT_SUPPORT_RFLINK
+#ifdef FDV_SCRIPT_SUPPORT_RFLINK
 
       // UINT8 = rf_getlocalid()
       // Returns local device id
@@ -1249,7 +1249,7 @@ namespace fdv
         return true;
       }
 
-      #endif // FDV_SCRIPT_SUPPORT_RFLINK
+#endif // FDV_SCRIPT_SUPPORT_RFLINK
 
 
       return false;

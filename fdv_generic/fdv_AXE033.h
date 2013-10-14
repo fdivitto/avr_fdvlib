@@ -2,7 +2,7 @@
 # Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
 # Copyright (c) 2013 Fabrizio Di Vittorio.
 # All rights reserved.
- 
+
 # GNU GPL LICENSE
 #
 # This module is free software; you can redistribute it and/or
@@ -58,14 +58,14 @@ namespace fdv
   class AXE033LCD
   {
   public:
-    
+
     explicit AXE033LCD(uint8_t address = 0x63)
       : m_address(address), m_col(0), m_row(0)
     {
       TaskManager::init();
       delay(200); // wait for LCD initialization (actually needed only for powerup)
     }
-    
+
 
     // send text
     void textOut(char const* str)
@@ -91,7 +91,7 @@ namespace fdv
         }
       }
     }
-    
+
 
     void textOut_P(PGM_P str)
     {
@@ -123,7 +123,7 @@ namespace fdv
       delay(20);  // 10+20 ms delay
       moveTo(0, 0);
     }
-    
+
     // move to position (row=0..15, col=0..1)
     void moveTo(uint8_t row, uint8_t col)
     {
@@ -132,21 +132,21 @@ namespace fdv
       sendCMD( (row == 0 ? 128 : 192) + col );
       delay(10);
     }
-    
+
     // turn on/off cursor and display and cursor blinking
     void setDisplay(bool displayVisible, bool cursorVisible, bool cursorBlink)
     {
       sendCMD(8 | (displayVisible? 4 : 0) | (cursorVisible? 2 : 0) | (cursorBlink? 1 : 0));
     }
 
-    
+
   private:
 
     uint8_t m_address;
     TwoWire m_I2C;
     uint8_t m_col;
     uint8_t m_row;
-    
+
     void sendCMD(uint8_t cmd)
     {
       uint8_t buffer[4];
@@ -157,7 +157,7 @@ namespace fdv
       m_I2C.writeTo(m_address, &buffer[0], 4);
       delay(10);
     }
-    
+
   };
 
 

@@ -2,7 +2,7 @@
 # Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
 # Copyright (c) 2013 Fabrizio Di Vittorio.
 # All rights reserved.
- 
+
 # GNU GPL LICENSE
 #
 # This module is free software; you can redistribute it and/or
@@ -94,7 +94,7 @@ namespace fdv
       *num = ((LSB >> 4) | ((MSB & 0x7) << 4)) * 16 + (LSB & pgm_read_byte(&DS18B20_zeroBit[resIdx]));
       *den = 16;
       if (MSB & 0x80) *num = -*num;
-	  
+
       return true;
     }
 

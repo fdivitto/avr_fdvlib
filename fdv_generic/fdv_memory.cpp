@@ -2,7 +2,7 @@
 # Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
 # Copyright (c) 2013 Fabrizio Di Vittorio.
 # All rights reserved.
- 
+
 # GNU GPL LICENSE
 #
 # This module is free software; you can redistribute it and/or
@@ -59,8 +59,7 @@ void __cxa_pure_virtual(void)
 
 
 ///   MCU would never "exit", so atexit can be dummy.
-extern "C"
-void atexit( void )
+extern "C" void atexit( void )
 {
 }
 

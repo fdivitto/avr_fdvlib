@@ -2,7 +2,7 @@
 # Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
 # Copyright (c) 2013 Fabrizio Di Vittorio.
 # All rights reserved.
- 
+
 # GNU GPL LICENSE
 #
 # This module is free software; you can redistribute it and/or
@@ -42,36 +42,36 @@ namespace fdv
 
 
   // Interrupt handlers
-  #if defined(FDV_ATMEGA1280_2560)
+#if defined(FDV_ATMEGA1280_2560)
 
-    ISR(USART0_RX_vect)
-    {
-      HardwareSerial<0>::getBuffer()->put(UDR0);
-    }
+  ISR(USART0_RX_vect)
+  {
+    HardwareSerial<0>::getBuffer()->put(UDR0);
+  }
 
-    ISR(USART1_RX_vect)
-    {
-      HardwareSerial<1>::getBuffer()->put(UDR1);
-    }
+  ISR(USART1_RX_vect)
+  {
+    HardwareSerial<1>::getBuffer()->put(UDR1);
+  }
 
-    ISR(USART2_RX_vect)
-    {
-      HardwareSerial<2>::getBuffer()->put(UDR2);
-    }
+  ISR(USART2_RX_vect)
+  {
+    HardwareSerial<2>::getBuffer()->put(UDR2);
+  }
 
-    ISR(USART3_RX_vect)
-    {
-      HardwareSerial<3>::getBuffer()->put(UDR3);
-    }
+  ISR(USART3_RX_vect)
+  {
+    HardwareSerial<3>::getBuffer()->put(UDR3);
+  }
 
-  #else
+#else
 
-    ISR(USART_RX_vect)
-    {
-      HardwareSerial<0>::getBuffer()->put(UDR0);
-    }
+  ISR(USART_RX_vect)
+  {
+    HardwareSerial<0>::getBuffer()->put(UDR0);
+  }
 
-  #endif
+#endif
 
 
 

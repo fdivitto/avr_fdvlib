@@ -2,7 +2,7 @@
 # Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
 # Copyright (c) 2013 Fabrizio Di Vittorio.
 # All rights reserved.
- 
+
 # GNU GPL LICENSE
 #
 # This module is free software; you can redistribute it and/or
@@ -40,27 +40,27 @@ namespace fdv
   // parts from JeeLabs and Rob Tillaart
   struct DateTime
   {
-    
+
     uint8_t  seconds;
     uint8_t  minutes;
     uint8_t  hours;
     uint16_t year;
     uint8_t  month;
     uint8_t  day;
-      
-      
+
+
     DateTime()
       : seconds(0), minutes(0), hours(0), year(2000), month(1), day(1)
     {      
     }
-    
-    
+
+
     DateTime(uint8_t day_, uint8_t month_, uint16_t year_, uint8_t hours_, uint8_t minutes_, uint8_t seconds_)
       : seconds(seconds_), minutes(minutes_), hours(hours_), year(year_), month(month_), day(day_)
     {  
     }
-    
-    
+
+
     explicit DateTime(uint32_t unixTimeStamp)
     {
       setUnixDateTime(unixTimeStamp);
@@ -75,14 +75,14 @@ namespace fdv
       buf[3] = 0;
       return string(buf);
     }
-    
+
     // 0=sunday...6=saturday
     uint8_t dayOfWeek() const
     {
       return (date2days(year, month, day) + 6) % 7;
     }    
-    
-    
+
+
     DateTime& setUnixDateTime(uint32_t unixTime)
     {
       unixTime      -= SECONDS_FROM_1970_TO_2000;
@@ -112,15 +112,15 @@ namespace fdv
       day = days + 1;    
       return *this;
     }
-    
-    
+
+
     uint32_t getUnixDateTime() const
     {
       uint16_t days = date2days(year, month, day);
       return time2long(days, hours, minutes, seconds) + SECONDS_FROM_1970_TO_2000;
     }
-    
-    
+
+
     DateTime& setNTPDateTime(uint8_t const* datetimeField, uint8_t timeZone)
     {
       uint32_t t = 0;
@@ -132,8 +132,8 @@ namespace fdv
       if (f > 0.4) ++t;
       return setUnixDateTime(t);
     }
-    
-    
+
+
     // must be updated before 50 days using adjustNow()
     static DateTime now()
     {
@@ -142,15 +142,15 @@ namespace fdv
       uint32_t diff = (currentMillis < locLastMillis) ? (0xFFFFFFFF - locLastMillis + currentMillis) : (currentMillis - locLastMillis);
       return DateTime().setUnixDateTime( lastDateTime().getUnixDateTime() + (diff / 1000) );
     }
-    
-    
+
+
     static void adjustNow(DateTime const& currentDateTime)
     {
       lastMillis()   = millis();
       lastDateTime() = currentDateTime;
     }
-    
-    
+
+
     // format:
     //    'd' : Day of the month, 2 digits with leading zeros (01..31)
     //    'j' : Day of the month without leading zeros (1..31)
@@ -171,39 +171,39 @@ namespace fdv
       {
         switch (format[i])
         {
-          case 'd':
-            outstr.append( padLeft(toString(day), '0', 2) );
-            break;
-          case 'j':
-            outstr.append( toString(day) );
-            break;
-          case 'w':
-            outstr.append( toString(dayOfWeek()) );
-            break;
-          case 'm':
-            outstr.append( padLeft(toString(month), '0', 2) );
-            break;
-          case 'n':
-            outstr.append( toString(month) );
-            break;
-          case 'Y':
-            outstr.append( toString(year) );
-            break;
-          case 'y':
-            outstr.append( toString(year).begin()+2 );
-            break;
-          case 'H':
-            outstr.append( padLeft(toString(hours), '0', 2) );
-            break;
-          case 'i':
-            outstr.append( padLeft(toString(minutes), '0', 2) );
-            break;
-          case 's':
-            outstr.append( padLeft(toString(seconds), '0', 2) );
-            break;
-          default:
-            outstr.push_back(format[i]);
-            break;
+        case 'd':
+          outstr.append( padLeft(toString(day), '0', 2) );
+          break;
+        case 'j':
+          outstr.append( toString(day) );
+          break;
+        case 'w':
+          outstr.append( toString(dayOfWeek()) );
+          break;
+        case 'm':
+          outstr.append( padLeft(toString(month), '0', 2) );
+          break;
+        case 'n':
+          outstr.append( toString(month) );
+          break;
+        case 'Y':
+          outstr.append( toString(year) );
+          break;
+        case 'y':
+          outstr.append( toString(year).begin()+2 );
+          break;
+        case 'H':
+          outstr.append( padLeft(toString(hours), '0', 2) );
+          break;
+        case 'i':
+          outstr.append( padLeft(toString(minutes), '0', 2) );
+          break;
+        case 's':
+          outstr.append( padLeft(toString(seconds), '0', 2) );
+          break;
+        default:
+          outstr.push_back(format[i]);
+          break;
         }
       }
       return outstr;
@@ -211,23 +211,23 @@ namespace fdv
 
 
   private:
-    
+
     static uint32_t const SECONDS_FROM_1970_TO_2000 = 946684800;
-    
-    
+
+
     static uint8_t daysInMonth(uint8_t month)
     {
       static uint8_t const DIMO[] PROGMEM = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
       return pgm_read_byte(&DIMO[month]);
     }
-    
-    
+
+
     static long time2long(uint16_t days, uint8_t h, uint8_t m, uint8_t s)
     {
       return ((days * 24L + h) * 60 + m) * 60 + s;
     }  
-    
-    
+
+
     static uint16_t date2days(uint16_t y, uint8_t m, uint8_t d)
     {
       if (y >= 2000)
@@ -239,36 +239,36 @@ namespace fdv
         ++days;
       return days + 365 * y + (y + 3) / 4 - 1;
     }
-    
-    
+
+
     static DateTime& lastDateTime()
     {
       static DateTime s_lastDateTime;
       return s_lastDateTime;
     }
-    
-    
+
+
     static uint32_t& lastMillis()
     {
       static uint32_t s_lastMillis = millis();
       return s_lastMillis;
     }
-    
-    
+
+
   };
-  
+
 
   inline bool operator > (DateTime const& lhs, DateTime const& rhs)
   {
     return lhs.getUnixDateTime() > rhs.getUnixDateTime();
   }
-  
-  
+
+
   inline string const toString(fdv::DateTime const& dt, bool date = true, bool time = true)
   {
     // dd/mm/yyyy hh:mm:ss
     // 0123456789012345678
-    
+
     char buf[20];
     uint8_t off = 0;
     if (date)
@@ -290,15 +290,15 @@ namespace fdv
       buf[10] = ' ';
     return string(&buf[0]);    
   }
-  
-  
+
+
   template <typename StreamT>
   inline StreamT& operator<< (StreamT& stream, fdv::DateTime const& dt)
   {
     return stream << toString(dt).c_str();
   }   
-  
-  
+
+
 
 
 } // end of "fdv" namespace

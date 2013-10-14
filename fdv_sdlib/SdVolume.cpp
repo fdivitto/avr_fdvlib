@@ -1,22 +1,22 @@
 /* Arduino SdFat Library
- * Copyright (C) 2009 by William Greiman
- *
- * This file is part of the Arduino SdFat Library
- *
- * This Library is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This Library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with the Arduino SdFat Library.  If not, see
- * <http://www.gnu.org/licenses/>.
- */
+* Copyright (C) 2009 by William Greiman
+*
+* This file is part of the Arduino SdFat Library
+*
+* This Library is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This Library is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with the Arduino SdFat Library.  If not, see
+* <http://www.gnu.org/licenses/>.
+*/
 #include "SdFat.h"
 //------------------------------------------------------------------------------
 // raw block cache
@@ -210,20 +210,20 @@ uint8_t SdVolume::freeChain(uint32_t cluster) {
 }
 //------------------------------------------------------------------------------
 /**
- * Initialize a FAT volume.
- *
- * \param[in] dev The SD card where the volume is located.
- *
- * \param[in] part The partition to be used.  Legal values for \a part are
- * 1-4 to use the corresponding partition on a device formatted with
- * a MBR, Master Boot Record, or zero if the device is formatted as
- * a super floppy with the FAT boot sector in block zero.
- *
- * \return The value one, true, is returned for success and
- * the value zero, false, is returned for failure.  Reasons for
- * failure include not finding a valid partition, not finding a valid
- * FAT file system in the specified partition or an I/O error.
- */
+* Initialize a FAT volume.
+*
+* \param[in] dev The SD card where the volume is located.
+*
+* \param[in] part The partition to be used.  Legal values for \a part are
+* 1-4 to use the corresponding partition on a device formatted with
+* a MBR, Master Boot Record, or zero if the device is formatted as
+* a super floppy with the FAT boot sector in block zero.
+*
+* \return The value one, true, is returned for success and
+* the value zero, false, is returned for failure.  Reasons for
+* failure include not finding a valid partition, not finding a valid
+* FAT file system in the specified partition or an I/O error.
+*/
 uint8_t SdVolume::init(Sd2Card* dev, uint8_t part) {
   uint32_t volumeStartBlock = 0;
   sdCard_ = dev;
@@ -236,8 +236,8 @@ uint8_t SdVolume::init(Sd2Card* dev, uint8_t part) {
     if ((p->boot & 0X7F) !=0  ||
       p->totalSectors < 100 ||
       p->firstSector == 0) {
-      // not a valid partition
-      return false;
+        // not a valid partition
+        return false;
     }
     volumeStartBlock = p->firstSector;
   }
@@ -247,7 +247,7 @@ uint8_t SdVolume::init(Sd2Card* dev, uint8_t part) {
     bpb->fatCount == 0 ||
     bpb->reservedSectorCount == 0 ||
     bpb->sectorsPerCluster == 0) {
-       // not valid FAT volume
+      // not valid FAT volume
       return false;
   }
   fatCount_ = bpb->fatCount;
@@ -260,7 +260,7 @@ uint8_t SdVolume::init(Sd2Card* dev, uint8_t part) {
     if (clusterSizeShift_++ > 7) return false;
   }
   blocksPerFat_ = bpb->sectorsPerFat16 ?
-                    bpb->sectorsPerFat16 : bpb->sectorsPerFat32;
+    bpb->sectorsPerFat16 : bpb->sectorsPerFat32;
 
   fatStartBlock_ = volumeStartBlock + bpb->reservedSectorCount;
 
@@ -275,7 +275,7 @@ uint8_t SdVolume::init(Sd2Card* dev, uint8_t part) {
 
   // total blocks for FAT16 or FAT32
   uint32_t totalBlocks = bpb->totalSectors16 ?
-                           bpb->totalSectors16 : bpb->totalSectors32;
+    bpb->totalSectors16 : bpb->totalSectors32;
   // total data blocks
   clusterCount_ = totalBlocks - (dataStartBlock_ - volumeStartBlock);
 

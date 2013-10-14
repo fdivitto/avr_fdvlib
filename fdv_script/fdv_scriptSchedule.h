@@ -2,7 +2,7 @@
 # Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
 # Copyright (c) 2013 Fabrizio Di Vittorio.
 # All rights reserved.
- 
+
 # GNU GPL LICENSE
 #
 # This module is free software; you can redistribute it and/or
@@ -66,27 +66,27 @@ namespace fdv
 
 
     /*
-     * Reloads programmed events from configuration file into memory
-     *
-     * Every seconds:
-     *   KEY   = script_(name)
-     *   VALUE = (scriptfilename);(seconds)
-     *   Example:   KEY="script_pippo"  VALUE="pippo;2"        -> Executes file "pippo" every 2 seconds
-     *
-     *
-     * Every date/time match:
-     *   KEY   = script_(name)
-     *   VALUE = (scriptfilename);DD/MM/YYYY HH:MM:SS
-     *   Notes: every field can be ".." or "...." for "don't care". ".." must be placed from left to right.
-     *   Valid Example:   KEY="script_pippo"  VALUE="pippo;../../.... 14:00:00"   -> Execute file "pippo" whenever time is "14:00:00"
-     *   Invalid example: KEY="script_pippo"  VALUE="pippo;../../.... 14:..:.."   -> WRONG!!
-     *
-     * Notes:
-     *   (name) = max 10 characters
-     *   (scriptfilename) = max 13 characters
-     *   (seconds) = max 32 bit unsigned
-     *   No need to synchronize taskCount because tasks are executed out of interrupts
-     */
+    * Reloads programmed events from configuration file into memory
+    *
+    * Every seconds:
+    *   KEY   = script_(name)
+    *   VALUE = (scriptfilename);(seconds)
+    *   Example:   KEY="script_pippo"  VALUE="pippo;2"        -> Executes file "pippo" every 2 seconds
+    *
+    *
+    * Every date/time match:
+    *   KEY   = script_(name)
+    *   VALUE = (scriptfilename);DD/MM/YYYY HH:MM:SS
+    *   Notes: every field can be ".." or "...." for "don't care". ".." must be placed from left to right.
+    *   Valid Example:   KEY="script_pippo"  VALUE="pippo;../../.... 14:00:00"   -> Execute file "pippo" whenever time is "14:00:00"
+    *   Invalid example: KEY="script_pippo"  VALUE="pippo;../../.... 14:..:.."   -> WRONG!!
+    *
+    * Notes:
+    *   (name) = max 10 characters
+    *   (scriptfilename) = max 13 characters
+    *   (seconds) = max 32 bit unsigned
+    *   No need to synchronize taskCount because tasks are executed out of interrupts
+    */
     static void refresh(Ini& ini)
     {
       taskCount = 0;

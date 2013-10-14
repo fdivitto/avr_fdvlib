@@ -2,7 +2,7 @@
 # Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
 # Copyright (c) 2013 Fabrizio Di Vittorio.
 # All rights reserved.
- 
+
 # GNU GPL LICENSE
 #
 # This module is free software; you can redistribute it and/or
@@ -42,23 +42,23 @@
 
 namespace fdv
 { 
-  
+
   class string
   {
 
     static uint16_t const PREALLOCSIZE = 15;
 
   public:
-    
+
     //// construct/copy/destroy
-    
+
     string()
       : m_data(allocChars(1))
     {
       m_data[0] = 0;
     }
 
-    
+
     // copy constructor
     string(string const& str, uint16_t len = 0xFFFF)
       : m_data(NULL)
@@ -86,17 +86,17 @@ namespace fdv
     {
       assign(first, last-first);
     }
-    
+
 
     ~string()
     {
       freeChars(m_data);
     }
-    
-    
+
+
 
     //////////// assignment
-    
+
     string& assign(string const& str, uint16_t len = 0xFFFF)
     {
       return assign(&str[0], len);
@@ -138,13 +138,13 @@ namespace fdv
     {
       return assign(str);
     }
-    
-    
+
+
     string& operator= (char const* str)
     {
       return assign(str);
     }
-    
+
 
     string& operator= (char c)
     {
@@ -156,10 +156,10 @@ namespace fdv
     {
       fdv::swap(m_data, s.m_data);
     }
-    
+
 
     //// capacity
-    
+
 
     // warning: linear cost
     uint16_t size() const
@@ -189,10 +189,10 @@ namespace fdv
         memset(&m_data[oldlen], c, n-oldlen);
       m_data[n] = 0;
     }    
-    
-    
+
+
     //// element access
-    
+
     char* begin()
     {
       return m_data;
@@ -215,7 +215,7 @@ namespace fdv
       return &m_data[size()];
     }
 
-    
+
     char const& operator[] (uint16_t pos) const
     {
       return m_data[pos];
@@ -226,7 +226,7 @@ namespace fdv
     {
       return m_data[pos];
     }    
-    
+
 
     char const* c_str() const
     {
@@ -244,26 +244,26 @@ namespace fdv
     {
       return append(str);
     }
-    
-    
+
+
     string& operator+= (char const* s)
     {
       return append(s);
     }
-    
-    
+
+
     string& operator+= (char c)
     {
       return append(c);
     }
-    
-    
+
+
     string& append(string const& str)
     {
       return append(&str[0]);
     }
-    
-    
+
+
     string& append(char const* str)
     {
       m_data = reallocChars(m_data, strlen(m_data)+strlen(str)+1);
@@ -287,19 +287,19 @@ namespace fdv
       m_data[oldlen+1] = 0;
     }    
 
-    
+
     int compare(string const& str) const
     {
       return compare(&str[0]);
     }
-    
-    
+
+
     int compare(char const* s) const
     {
       return strcmp(m_data, s);
     }
-    
-    
+
+
     void erase(char* first, uint16_t count)
     {
       if (count > 0)
@@ -318,10 +318,10 @@ namespace fdv
     }
 
   private:
-      
-  
+
+
     char m_buffer[PREALLOCSIZE];
-    
+
     char* allocChars(uint16_t size)
     {
       if (size <= PREALLOCSIZE)
@@ -329,7 +329,7 @@ namespace fdv
       else
         return (char*)malloc(size);
     }
-    
+
     char* reallocChars(char* ptr, uint16_t size)
     {
       char* newbuf = NULL;
@@ -346,7 +346,7 @@ namespace fdv
         memcpy(newbuf, ptr, min(size, PREALLOCSIZE));
       return newbuf;
     }
-    
+
     void freeChars(char* ptr)
     {
       if (ptr != &m_buffer[0])
@@ -355,35 +355,35 @@ namespace fdv
 
 
   private:
-    
+
     char*  m_data;
   };  // end of string
-  
-  
-  
-  
+
+
+
+
   inline void swap(string& lhs, string& rhs)
   {
     lhs.swap(rhs);
   }
-  
-  
-  
+
+
+
   inline bool operator==(string const& lhs, string const& rhs)
   {
     return lhs.compare(rhs) == 0;
   }
-  
+
   inline bool operator==(string const& lhs, char const* rhs)
   {
     return lhs.compare(rhs) == 0;
   }
-  
+
   inline bool operator==(char const* lhs, string const& rhs)
   {
     return rhs.compare(lhs) == 0;
   }
-  
+
   inline bool operator<(string const& lhs, string const& rhs)
   {
     return rhs.compare(lhs) < 0;
@@ -403,22 +403,22 @@ namespace fdv
   {
     return string(lhs).append(rhs);
   }  
-  
+
   inline string operator+(string const& lhs, char rhs)
   {
     return string(lhs).append(rhs);
   }  
-  
+
   inline string operator+(string const& lhs, string const& rhs)
   {
     return string(lhs).append(rhs);
   }  
-  
-  
-  
+
+
+
   ////////////////////////////////////////////////////////////////////////////////////////
   // toString()
-  
+
   inline string const toString(int16_t v)
   {
     // -65535.
@@ -435,7 +435,7 @@ namespace fdv
     return string(&str[0]);
   }
 
-  
+
   inline string const toString(uint32_t v)
   {
     // 4294967296
@@ -453,16 +453,16 @@ namespace fdv
     Utility::fmtUInt64(v, &str[0], 21);
     return string(&str[0]);
   }
-  
-  
+
+
   inline string const toString(double v, uint8_t precision = 3)
   {
     char str[16];
     Utility::fmtDouble(v, precision, &str[0], 15);
     return string(&str[0]);
   }
-  
-  
+
+
   template <typename T>
   inline string const toString(vector<T> const& v)
   {
@@ -496,7 +496,7 @@ namespace fdv
     else
       return s;
   }
-  
+
 
   inline string const trim(string const& str)
   {
@@ -525,11 +525,11 @@ namespace fdv
     s[2] = 0;
     return strtoul(&s[0], NULL, 16);
   }
-  
-  
-  
 
-  
+
+
+
+
 }  // end of namespace fdv
 
 

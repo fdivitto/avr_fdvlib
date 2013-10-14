@@ -2,7 +2,7 @@
 # Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
 # Copyright (c) 2013 Fabrizio Di Vittorio.
 # All rights reserved.
- 
+
 # GNU GPL LICENSE
 #
 # This module is free software; you can redistribute it and/or
@@ -53,12 +53,12 @@
 
 namespace fdv
 {
-  
-  
+
+
   /////////////////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////////////
   // Path
-  
+
   struct Path
   {
     static string const extractDirectory(char const* filename)
@@ -70,7 +70,7 @@ namespace fdv
         return string(".");
       return string(filename, p+1);        
     }
-    
+
     static string const extractFilename(char const* filename)
     {
       char const* p = strrchr(filename, '/');
@@ -80,7 +80,7 @@ namespace fdv
         return string(filename);
       return string(p+1);
     }
-    
+
     // return filename extension without "."
     static string const extractFilenameExtension(char const* filename)
     {
@@ -105,24 +105,24 @@ namespace fdv
   public:
 
     SDCard(HardwareSPIMaster* spi) :
-      m_card(spi)
-    {
-      TaskManager::init();  // just in case it is not already initialized
-      m_init = m_card.init() && m_volume.init(&m_card);
-      SdFile::dateTimeCallback(dtcallback);
-    }
+        m_card(spi)
+        {
+          TaskManager::init();  // just in case it is not already initialized
+          m_init = m_card.init() && m_volume.init(&m_card);
+          SdFile::dateTimeCallback(dtcallback);
+        }
 
 
-    SdVolume& volume() const
-    {
-      return m_volume;
-    }
+        SdVolume& volume() const
+        {
+          return m_volume;
+        }
 
 
-    bool available() const
-    {
-      return m_init;
-    }
+        bool available() const
+        {
+          return m_init;
+        }
 
 
   private:
@@ -138,31 +138,31 @@ namespace fdv
     mutable bool     m_init;
     mutable SdVolume m_volume;
   };
-  
-  
+
+
   /////////////////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////////////
   // FileSystem
-  
-  
-  
+
+
+
   class FileSystem
   {
   public:
-  
+
     friend class File;
-    
-    
+
+
     // Changes and restores directory on destroy  
     class DirChanger
     {
     public:
       DirChanger(FileSystem& fileSystem, char const* newDir)
-      : m_fileSystem(fileSystem), m_prevDir(fileSystem.getCurrentDirectory())
+        : m_fileSystem(fileSystem), m_prevDir(fileSystem.getCurrentDirectory())
       {
         m_fileSystem.setCurrentDirectory(newDir);
       }
-      
+
       ~DirChanger()
       {
         m_fileSystem.setCurrentDirectory(m_prevDir.c_str());
@@ -171,8 +171,8 @@ namespace fdv
       FileSystem& m_fileSystem;
       string      m_prevDir;
     };
-    
-    
+
+
     // used by beginDirectoryList() and nextDirectoryItem()
     struct DirectoryItem
     {
@@ -181,15 +181,15 @@ namespace fdv
       uint32_t size;
       DateTime lastWriteDateTime;
     };    
-    
-    
+
+
     FileSystem(SDCard* sdcard)
       : m_card(sdcard)
     {
       m_curDir.openRoot(&m_card->volume());
       m_curDirStr = '/';      
     }
-    
+
 
     bool available()
     {
@@ -222,27 +222,27 @@ namespace fdv
       {
         // relative path
         string path = m_curDirStr
-                      + (Path::isSep(m_curDirStr[m_curDirStr.size()-1])?"":"/") 
-                      + dirname 
-                      + (Path::isSep(dirname[strlen(dirname)-1])?"":"/");
+          + (Path::isSep(m_curDirStr[m_curDirStr.size()-1])?"":"/") 
+          + dirname 
+          + (Path::isSep(dirname[strlen(dirname)-1])?"":"/");
         cd(path.c_str());
       }
     }
-    
-    
+
+
   private:
-    
+
     // SDCard must be already enabled
     // "/dir1/dir2/" or "/dir1/dir2"
     void cd(char const* fullpath)
     {
       char const* readPos = fullpath;
-      
+
       // select root (initial '/')
       m_curDir.close();
       m_curDir.openRoot(&m_card->volume());
       ++readPos;
-      
+
       while (*readPos)
       {
         char const* nextSlash = max(strchr(readPos, '/'), strchr(readPos, '\\'));      
@@ -266,16 +266,16 @@ namespace fdv
       }
       m_curDirStr.assign(fullpath);
     }
-    
-    
+
+
   public:
-    
+
     string const getCurrentDirectory()
     {
       return m_curDirStr;
     }
-    
-    
+
+
     // accepts relative or absolute paths
     void makeDirectory(char const* dirpath)
     {
@@ -285,8 +285,8 @@ namespace fdv
       dir.sync();
       m_curDir.sync();      
     }
-    
-    
+
+
     // accepts relative or absolute paths
     void removeFile(char const* filename)
     {
@@ -294,8 +294,8 @@ namespace fdv
       SdFile::remove(&m_curDir, &Path::extractFilename(filename)[0]);
       m_curDir.sync();      
     }
-    
-    
+
+
     // accepts relative or absolute paths
     void removeDirectory(char const* dirpath)
     {
@@ -308,15 +308,15 @@ namespace fdv
         m_curDir.sync();
       }      
     }
-    
-    
+
+
     // applies to current directory
     void beginDirectoryList()
     {
       m_curDir.rewind();
     }
-    
-        
+
+
     // applies to current directory
     bool nextDirectoryItem(DirectoryItem& item)
     {
@@ -329,11 +329,11 @@ namespace fdv
           item.isDirectory = DIR_IS_SUBDIR(&p);
           item.size = p.fileSize;
           item.lastWriteDateTime = DateTime(FAT_DAY(p.lastWriteDate),
-                                            FAT_MONTH(p.lastWriteDate),
-                                            FAT_YEAR(p.lastWriteDate),
-                                            FAT_HOUR(p.lastWriteTime),
-                                            FAT_MINUTE(p.lastWriteTime),
-                                            FAT_SECOND(p.lastWriteTime));
+            FAT_MONTH(p.lastWriteDate),
+            FAT_YEAR(p.lastWriteDate),
+            FAT_HOUR(p.lastWriteTime),
+            FAT_MINUTE(p.lastWriteTime),
+            FAT_SECOND(p.lastWriteTime));
 
           // file/dir name
           char* w = &item.name[0];
@@ -344,22 +344,22 @@ namespace fdv
             *w++ = p.name[i];
           }
           *w = 0;
-          
+
           return true;        
         }
       }
       return false; // no more items
     }
-    
-    
+
+
     SDCard* sdcard()
     {
       return m_card;
     }
 
-    
+
   private:
-    
+
     SDCard* m_card;
 
     // current directory
@@ -371,18 +371,18 @@ namespace fdv
   /////////////////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////////////
   // DirChanger
-  
-  typedef FileSystem::DirChanger DirChanger;
-  
 
-    
+  typedef FileSystem::DirChanger DirChanger;
+
+
+
   /////////////////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////////////
   // File
-  
+
   class File
   {
-    
+
   public:
 
     static uint8_t const MD_READ   = O_READ;
@@ -391,78 +391,78 @@ namespace fdv
     static uint8_t const MD_CREATE = O_CREAT;
     static uint8_t const MD_EXCL   = O_EXCL;
     static uint8_t const MD_TRUNC  = O_TRUNC;
-    
-    
+
+
     enum Seek
     {
       SK_SET,
       SK_END,
       SK_CUR
     };    
-    
-    
+
+
     // filename accepts relative or absolute path
     File(FileSystem& fileSystem, char const* filename, uint8_t mode)
     {
       DirChanger dirChanger(fileSystem, Path::extractDirectory(filename).c_str());
       m_file.open(&fileSystem.m_curDir, Path::extractFilename(filename).c_str(), mode);
     }
-    
-    
+
+
     ~File()
     {
       close();
     }
-    
-    
+
+
     void close()
     {
       m_file.close();
     }
-    
-    
+
+
     uint32_t position()
     {
       return m_file.curPosition();
     }
-    
-    
+
+
     void position(uint32_t newPos)
     {
       m_file.seekSet(newPos); // don't use seek(), to allow unsigned 32 bit position
     }
-    
-    
+
+
     uint32_t seek(int32_t offset, Seek origin)
     {
       switch (origin)
       {
-        case SK_SET:
-          m_file.seekSet(offset);
-          break;
-        case SK_CUR:
-          m_file.seekCur(offset);
-          break;
-        case SK_END:
-          m_file.seekEnd();
-          break;
+      case SK_SET:
+        m_file.seekSet(offset);
+        break;
+      case SK_CUR:
+        m_file.seekCur(offset);
+        break;
+      case SK_END:
+        m_file.seekEnd();
+        break;
       }
       return m_file.curPosition();
     }
-    
-    
+
+
     uint32_t size()
     {
       return m_file.fileSize();
     }
-    
-    
+
+
     void truncate(uint32_t newSize)
     {
       m_file.truncate(newSize);
     }
-    
-    
+
+
     bool isOpen()
     {
       return m_file.isOpen();
@@ -473,13 +473,13 @@ namespace fdv
     {
       return position() >= size();
     }
-    
-    
+
+
     uint16_t read(void* buf, uint16_t nbyte)
     {
       return m_file.read(buf, nbyte);
     }
-    
+
 
     string const readLine()
     {
@@ -505,27 +505,27 @@ namespace fdv
     {
       return m_file.write(buf, nbyte);
     }
-    
-    
+
+
     void write(const char* str)
     {
       m_file.write(str);
     }
-    
-    
+
+
     void write_P(PGM_P str)
     {
       m_file.write_P(str);
     }
-    
-    
+
+
   private:
-    
+
     SdFile m_file;
-    
+
   };
 
-  
+
   /////////////////////////////////////////////////////////////////////////
   // fileCopy
   // accepts absolute and relative paths
@@ -533,10 +533,10 @@ namespace fdv
   {
     uint16_t const BUFFERSIZE = getFreeMem() / 2;
     Buffer<uint8_t> buffer(BUFFERSIZE);
-    
+
     File srcFile(fileSystem, sourcePath, File::MD_READ);
     File dstFile(fileSystem, destPath, File::MD_WRITE | File::MD_CREATE);
-    
+
     if (srcFile.isOpen() && dstFile.isOpen())
     {
       uint16_t len;
@@ -547,7 +547,7 @@ namespace fdv
     return false;
   }
 
-  
+
   /////////////////////////////////////////////////////////////////////////
   // fileMove
   // accepts absolute and relative paths
@@ -557,8 +557,8 @@ namespace fdv
     if (fileCopy(fileSystem, sourcePath, destPath))
       fileSystem.removeFile(sourcePath);
   }
-  
-  
+
+
   /////////////////////////////////////////////////////////////////////////
   // fileExists
   // accepts absolute and relative paths
@@ -568,8 +568,8 @@ namespace fdv
     File file(fileSystem, path, File::MD_READ);
     return file.isOpen();
   }
-  
-  
+
+
   /////////////////////////////////////////////////////////////////////////
   // getTempFilename
   inline string const getTempFilename(FileSystem& fileSystem)

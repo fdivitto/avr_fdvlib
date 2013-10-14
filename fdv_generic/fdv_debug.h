@@ -2,7 +2,7 @@
 # Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
 # Copyright (c) 2013 Fabrizio Di Vittorio.
 # All rights reserved.
- 
+
 # GNU GPL LICENSE
 #
 # This module is free software; you can redistribute it and/or
@@ -31,82 +31,82 @@
 
 
 #if defined(FDVDEBUG)
-  extern void debugStr(char const* msg);
+extern void debugStr(char const* msg);
 
 
-  namespace fdv
+namespace fdv
+{
+
+  struct Debug
   {
-
-    struct Debug
+    Debug const& operator << (char const* msg) const
     {
-      Debug const& operator << (char const* msg) const
-      {
-        debugStr(msg);
-        return *this;
-      }
+      debugStr(msg);
+      return *this;
+    }
 
-      Debug const& operator << (char* msg) const
-      {
-        debugStr(msg);
-        return *this;
-      }
+    Debug const& operator << (char* msg) const
+    {
+      debugStr(msg);
+      return *this;
+    }
 
-      Debug const& operator << (char value) const
-      {
-        char buf[2];
-        buf[0] = value; buf[1] = 0;
-        debugStr(&buf[0]);
-        return *this;
-      }
+    Debug const& operator << (char value) const
+    {
+      char buf[2];
+      buf[0] = value; buf[1] = 0;
+      debugStr(&buf[0]);
+      return *this;
+    }
 
-      Debug const& operator << (uint16_t value) const
-      {
-        return operator<<((uint32_t)value);
-      }
+    Debug const& operator << (uint16_t value) const
+    {
+      return operator<<((uint32_t)value);
+    }
 
-      Debug const& operator << (uint32_t value) const
-      {
-        char str[11];
-        fmtUInt32(value, &str[0], 10);
-        debugStr(&str[0]);
-        return *this;
-      }
+    Debug const& operator << (uint32_t value) const
+    {
+      char str[11];
+      fmtUInt32(value, &str[0], 10);
+      debugStr(&str[0]);
+      return *this;
+    }
 
-      template <typename StringT>
-      Debug const& operator << (StringT const& value) const
-      {
-        debugStr(value.c_str());
-        return *this;
-      }
+    template <typename StringT>
+    Debug const& operator << (StringT const& value) const
+    {
+      debugStr(value.c_str());
+      return *this;
+    }
 
-    };
+  };
 
-    #define ENDL "\x0d\x0a"
-    //#define ENDL '\r'
-    #define debug fdv::Debug()
+#define ENDL "\x0d\x0a"
+  //#define ENDL '\r'
+#define debug fdv::Debug()
 
-  } // end of fdv namespace
+} // end of fdv namespace
 
 
 #else // not defined(FDVDEBUG)
 
 
-  namespace fdv
+namespace fdv
+{
+
+  struct Debug
   {
-
-    struct Debug
+    template <typename T>
+    Debug const& operator << (T) const
     {
-      template <typename T>
-      Debug const& operator << (T) const
-      {
-        return *this;
-      }
-    };
+      return *this;
+    }
+  };
 
-    #define ENDL 0
-    #define debug fdv::Debug()
+#define ENDL 0
+#define debug fdv::Debug()
 
-  } // end of fdv namespace
+} // end of fdv namespace
 
 
 

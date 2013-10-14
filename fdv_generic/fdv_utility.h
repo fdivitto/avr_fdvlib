@@ -2,7 +2,7 @@
 # Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
 # Copyright (c) 2013 Fabrizio Di Vittorio.
 # All rights reserved.
- 
+
 # GNU GPL LICENSE
 #
 # This module is free software; you can redistribute it and/or
@@ -40,23 +40,23 @@ namespace fdv
   {
     typedef T1 first_type;
     typedef T2 second_type;
-    
+
     T1 first;
     T2 second;
-    
+
     pair() 
-    : first(T1()), second(T2()) 
+      : first(T1()), second(T2()) 
     {
     }
-    
+
     pair(T1 const& x, T2 const& y) 
-    : first(x), second(y) 
+      : first(x), second(y) 
     {
     }
-    
+
     template <typename U, typename V>
     pair(pair<U, V> const& p) 
-    : first(p.first), second(p.second) 
+      : first(p.first), second(p.second) 
     { 
     }
 
@@ -65,18 +65,18 @@ namespace fdv
       return first == rhs.first && second == rhs.second;
     }
   };
-  
-  
+
+
   template <typename T1, typename T2>
   inline pair<T1, T2> make_pair(T1 x, T2 y)
   {
     return pair<T1, T2>(x, y);
   }
-  
+
 
   struct Utility
   {
-  
+
     // Produce a formatted string in a buffer corresponding to the value provided.
     // If the 'width' parameter is non-zero, the value will be padded with leading
     // zeroes to achieve the specified width.  The number of characters added to
@@ -226,7 +226,7 @@ namespace fdv
     {
       return htons(network_word);
     }
-    
+
   };  // end of Utility struct    
 
 

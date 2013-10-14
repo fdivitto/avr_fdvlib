@@ -2,7 +2,7 @@
 # Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
 # Copyright (c) 2013 Fabrizio Di Vittorio.
 # All rights reserved.
- 
+
 # GNU GPL LICENSE
 #
 # This module is free software; you can redistribute it and/or
@@ -44,18 +44,18 @@ namespace fdv
 
 
   /*
-   * Handle ini files
-   *
-   * KEY <SP> = <SP> VALUE <LF>
-   * where LF='\n' (0x0A)
-   *
-   * Example:
-   *
-   * ip = 192.168.1.178
-   *
-   * KEY cannot contain spaces.
-   *
-   */
+  * Handle ini files
+  *
+  * KEY <SP> = <SP> VALUE <LF>
+  * where LF='\n' (0x0A)
+  *
+  * Example:
+  *
+  * ip = 192.168.1.178
+  *
+  * KEY cannot contain spaces.
+  *
+  */
   class Ini
   {
 
@@ -64,7 +64,7 @@ namespace fdv
     static uint8_t const MAX_KEY_LENGTH = 16;
 
     Ini(SDCard* sdcard, char const* filename) :
-      m_sdcard(sdcard), m_filename(filename)
+    m_sdcard(sdcard), m_filename(filename)
     {
     }
 
@@ -85,7 +85,7 @@ namespace fdv
         char* sp = strchr(line.c_str(), '='); // look for '='
         uint8_t len = sp-line.c_str()-1;
         if ( (exactMatch && sp!=NULL && len==klen && strncmp(line.c_str(), key, len)==0)
-             || (!exactMatch && sp!=NULL && len>=klen && strncmp(line.c_str(), key, klen)==0) )
+          || (!exactMatch && sp!=NULL && len>=klen && strncmp(line.c_str(), key, klen)==0) )
         {
           return true; // key found
         }

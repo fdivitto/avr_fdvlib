@@ -2,7 +2,7 @@
 # Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
 # Copyright (c) 2013 Fabrizio Di Vittorio.
 # All rights reserved.
- 
+
 # GNU GPL LICENSE
 #
 # This module is free software; you can redistribute it and/or
@@ -28,140 +28,140 @@
 
 /*
 
- DIGIT = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
+DIGIT = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
 
 
- ALPHA = 'a...z' | 'A...Z' | '_'
+ALPHA = 'a...z' | 'A...Z' | '_'
 
 
- HEXDIGIT =  'a...f' | 'A...F' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
+HEXDIGIT =  'a...f' | 'A...F' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
 
 
- BINDIGIT = '0' | '1'
+BINDIGIT = '0' | '1'
 
 
- constant = "0x" HEXDIGIT {HEXDIGIT}
-          | "0b" BINDIGIT {BINDIGIT}
-          | DIGIT {DIGIT} [ '.' DIGIT {DIGIT} ]
+constant = "0x" HEXDIGIT {HEXDIGIT}
+| "0b" BINDIGIT {BINDIGIT}
+| DIGIT {DIGIT} [ '.' DIGIT {DIGIT} ]
 
 
- escape = '\' ascii_char
+escape = '\' ascii_char
 
 
- evar = '$' variable
+evar = '$' variable
 
 
- eexp = "$(" expression ")"
+eexp = "$(" expression ")"
 
 
- string_literal = '"' {( escape | ascii_char | eexp | evar )} '"'
+string_literal = '"' {( escape | ascii_char | eexp | evar )} '"'
 
 
- unparsed_string_literal = ''' {ascii_char} '''
+unparsed_string_literal = ''' {ascii_char} '''
 
 
- identifier = ALPHA {(ALPHA | DIGIT)}
+identifier = ALPHA {(ALPHA | DIGIT)}
 
 
- variable = identifier [ '[' expression ']' ]
+variable = identifier [ '[' expression ']' ]
 
 
- primary_expression = variable
-                    | constant
-                    | string_literal
-                    | unparsed_string_literal
-                    | '(' expression ')'
-                    | '{' [expression] {',' expression} '}'
+primary_expression = variable
+| constant
+| string_literal
+| unparsed_string_literal
+| '(' expression ')'
+| '{' [expression] {',' expression} '}'
 
 
- postfix_expression = variable ("--" | "++")
-                    | identifier '(' [assignment_expression] {',' assignment_expression} ')'
-                    | primary_expression
+postfix_expression = variable ("--" | "++")
+| identifier '(' [assignment_expression] {',' assignment_expression} ')'
+| primary_expression
 
 
- unary_expression = postfix_expression
-                  | ("--" | "++") variable
-                  | ('+' | '-' | '!', '~') unary_expression
-                  | "sizeof" '(' variable ')'
-                  | '&' variable       (note: get pointer of variable)
-                  | '*' variable       (note: get value of pointer)
+unary_expression = postfix_expression
+| ("--" | "++") variable
+| ('+' | '-' | '!', '~') unary_expression
+| "sizeof" '(' variable ')'
+| '&' variable       (note: get pointer of variable)
+| '*' variable       (note: get value of pointer)
 
 
- multiplicative_expression = unary_expression {('*' | '/' | '%') unary_expression}
+multiplicative_expression = unary_expression {('*' | '/' | '%') unary_expression}
 
 
- additive_expression = multiplicative_expression {('+' | '-') multiplicative_expression}
+additive_expression = multiplicative_expression {('+' | '-') multiplicative_expression}
 
 
- shift_expression = additive_expression {("<<" | ">>") additive_expression}
+shift_expression = additive_expression {("<<" | ">>") additive_expression}
 
 
- relational_expression = shift_expression {('<' | '>' | '<=' | '>=') shift_expression}
+relational_expression = shift_expression {('<' | '>' | '<=' | '>=') shift_expression}
 
 
- equality_expression = relational_expression {('==' | '!=') relational_expression}
+equality_expression = relational_expression {('==' | '!=') relational_expression}
 
 
- and_expression = equality_expression {'&' equality_expression}
+and_expression = equality_expression {'&' equality_expression}
 
 
- exclusive_or_expression = and_expression {'^' and_expression}
+exclusive_or_expression = and_expression {'^' and_expression}
 
 
- inclusive_or_expression = exclusive_or_expression {'|' exclusive_or_expression}
+inclusive_or_expression = exclusive_or_expression {'|' exclusive_or_expression}
 
 
- logical_and_expression = inclusive_or_expression {"&&" inclusive_or_expression}
+logical_and_expression = inclusive_or_expression {"&&" inclusive_or_expression}
 
 
- logical_or_expression = logical_and_expression {"||" logical_and_expression}
+logical_or_expression = logical_and_expression {"||" logical_and_expression}
 
 
- conditional_expression = logical_or_expression ['?' expression ':' expression]
+conditional_expression = logical_or_expression ['?' expression ':' expression]
 
 
- identifier_assign = variable '='
+identifier_assign = variable '='
 
 
- assignment_expression = {identifier_assign} conditional_expression
+assignment_expression = {identifier_assign} conditional_expression
 
 
- expression = assignment_expression
+expression = assignment_expression
 
 
- expression_statement = [expression] ';'
+expression_statement = [expression] ';'
 
 
- compound_statement = '{' {statement} '}'
+compound_statement = '{' {statement} '}'
 
 
- selection_statement = "if" '(' expression ')' statement ["else" statement]
+selection_statement = "if" '(' expression ')' statement ["else" statement]
 
 
- iteration_statement = "while" '(' expression ')' statement
-                     | "do" statement "while" '(' expression ')' ';'
-                     | "for" '(' expression_statement expression ';' [expression] ')' statement
+iteration_statement = "while" '(' expression ')' statement
+| "do" statement "while" '(' expression ')' ';'
+| "for" '(' expression_statement expression ';' [expression] ')' statement
 
 
- jump_statement = "continue" ';'
-                | "break" ';'
+jump_statement = "continue" ';'
+| "break" ';'
 
 
- output_statement = ':' expression {':' expression} ';'
+output_statement = ':' expression {':' expression} ';'
 
 
- statement = "<?"
-           | "?>"
-           | "//" all_chars EOL
-           | output_statement
-           | compound_statement
-           | expression_statement
-           | selection_statement
-           | iteration_statement
-           | jump_statement
+statement = "<?"
+| "?>"
+| "//" all_chars EOL
+| output_statement
+| compound_statement
+| expression_statement
+| selection_statement
+| iteration_statement
+| jump_statement
 
 
- script = {statement}
+script = {statement}
 
 
 
@@ -175,28 +175,28 @@ using namespace fdv;
 
 struct Output
 {
-  void write(char c)
-  {
-    cout << c;
-  }
-  void write(char const* str)
-  {
-    cout << str;
-  }
+void write(char c)
+{
+cout << c;
+}
+void write(char const* str)
+{
+cout << str;
+}
 };
 
 int main()
 {
-  TextInput textInput(
-      "<?"
-      "x=10;"
-      "write(x);"
-      "?>"
-      );
-  Output output;
-  RunTime<Output> globalRunTime(&output);
-  if (parseScript(&globalRunTime, &textInput))
-    cout << "ok!" << endl;
+TextInput textInput(
+"<?"
+"x=10;"
+"write(x);"
+"?>"
+);
+Output output;
+RunTime<Output> globalRunTime(&output);
+if (parseScript(&globalRunTime, &textInput))
+cout << "ok!" << endl;
 }
 
 *******************************************************************************
@@ -206,90 +206,90 @@ SCRIPT SAMPLES:
 ************************
 Sample #0:
 
- <?
-   for (i=0; i<10; ++i)
-   {
- ?>
+<?
+for (i=0; i<10; ++i)
+{
+?>
 
- i = <? $i; ?>\n
+i = <? $i; ?>\n
 
- <?
-   }
- ?>
+<?
+}
+?>
 
 *************************
 Sample #1:
 
- <?
-   for (i=0; i<10; ++i)
-   {
-     : "i = " : str(i);
-   }
- ?>
+<?
+for (i=0; i<10; ++i)
+{
+: "i = " : str(i);
+}
+?>
 *************************
 Sample #2:
 
- <?
-   for (i=0; i<10; ++i)
-   {
-     :"i = $i";
-   }
- ?>
+<?
+for (i=0; i<10; ++i)
+{
+:"i = $i";
+}
+?>
 *************************
 Sample #3:
 
- <?
-   for (i=0; i<10; ++i)
-     write("i = $i\n");
- ?>
+<?
+for (i=0; i<10; ++i)
+write("i = $i\n");
+?>
 *************************
 Sample #4, expresions inside "$(...)":
 
- <?
-   for (i=0; i<10; ++i)
-     write("i = $(i/2)\n");
- ?>
+<?
+for (i=0; i<10; ++i)
+write("i = $(i/2)\n");
+?>
 *************************
 Sample #5, comments:
 
- <?
-   // comment
-   x=1; // another comment
- ?>
+<?
+// comment
+x=1; // another comment
+?>
 ************************
 Sample #6, arrays:
- <?
-   a = {};              // create empty array
-   arrayadd(&a, "one"); // add "one" (necessary for functions which require a reference to array)
-   b[10] = "hello";     // direct create and assign array (creation not required)
-   :"a=$a  b=$b";       // print arrays
-   :"b[10]=$b[10]";     // print single array item
- ?>
+<?
+a = {};              // create empty array
+arrayadd(&a, "one"); // add "one" (necessary for functions which require a reference to array)
+b[10] = "hello";     // direct create and assign array (creation not required)
+:"a=$a  b=$b";       // print arrays
+:"b[10]=$b[10]";     // print single array item
+?>
 ************************
 Sample #7, pointers:
- <?
-   a = 10;
-   b = &b;  // "b" is a reference (pointer) to "a"
-   c = *b + 1;  // *b=a=10 then c=11
- ?>
+<?
+a = 10;
+b = &b;  // "b" is a reference (pointer) to "a"
+c = *b + 1;  // *b=a=10 then c=11
+?>
 ************************
 Sample #8, inizializing array:
- <?
-   ar0 = {};  // empty array
-   ar1 = {1, 2, 3};
-   ar2 = {"one", 2, "tre"};
-   ar3 = {one, {sub1, sub2}};
+<?
+ar0 = {};  // empty array
+ar1 = {1, 2, 3};
+ar2 = {"one", 2, "tre"};
+ar3 = {one, {sub1, sub2}};
 ************************
 Sample #9, write and read array in INI file:
- <?
-   ar1 = {1, 2, 3, 4};
-   iniwritestring("CONF.INI", "myarray", str(arr));
-   ...
-   ar1 = eval(inireadstring("CONF.INI", "myarray", "{}"));
- ?>
+<?
+ar1 = {1, 2, 3, 4};
+iniwritestring("CONF.INI", "myarray", str(arr));
+...
+ar1 = eval(inireadstring("CONF.INI", "myarray", "{}"));
+?>
 
 
- */
+*/
 
 
 
@@ -333,47 +333,47 @@ namespace fdv
   public:
 
     TextInput(char const* text) :
-      m_text(text), m_pos(0)
-    {
-    }
+        m_text(text), m_pos(0)
+        {
+        }
 
-    char get()
-    {
-      //debug << "get() m_pos=" << m_pos << " c=" << m_text[m_pos] << " " << uint16_t(m_text[m_pos]) << ENDL;
-      return m_text[m_pos];
-    }
+        char get()
+        {
+          //debug << "get() m_pos=" << m_pos << " c=" << m_text[m_pos] << " " << uint16_t(m_text[m_pos]) << ENDL;
+          return m_text[m_pos];
+        }
 
-    void next()
-    {
-      ++m_pos;
-    }
+        void next()
+        {
+          ++m_pos;
+        }
 
-    size_t pos()
-    {
-      return m_pos;
-    }
+        size_t pos()
+        {
+          return m_pos;
+        }
 
-    void pos(size_t value)
-    {
-      m_pos = value;
-    }
+        void pos(size_t value)
+        {
+          m_pos = value;
+        }
 
-    bool isEOF()
-    {
-      return m_text[m_pos] == 0;
-    }
+        bool isEOF()
+        {
+          return m_text[m_pos] == 0;
+        }
 
-    string const extract(size_t from)
-    {
-      string ret(m_pos-from, ' ');
-      extract(from, ret.c_str());
-      return ret;
-    }
+        string const extract(size_t from)
+        {
+          string ret(m_pos-from, ' ');
+          extract(from, ret.c_str());
+          return ret;
+        }
 
-    void extract(size_t from, char* result)
-    {
-      memcpy(result, &m_text[from], m_pos-from);
-    }
+        void extract(size_t from, char* result)
+        {
+          memcpy(result, &m_text[from], m_pos-from);
+        }
 
   private:
 
@@ -390,66 +390,66 @@ namespace fdv
   struct BufferedFileInput : public InputBase
   {
     BufferedFileInput(File* file) :
-      m_file(file), m_bufPos(0), m_fileSize(m_file->size()), m_filePos(0xFFFFFFFF)
-    {
-      pos(0);
-    }
+  m_file(file), m_bufPos(0), m_fileSize(m_file->size()), m_filePos(0xFFFFFFFF)
+  {
+    pos(0);
+  }
 
-    char get()
-    {
-      return m_buffer[m_bufPos];
-    }
+  char get()
+  {
+    return m_buffer[m_bufPos];
+  }
 
-    void next()
-    {
-      ++m_bufPos;
-      if (m_bufPos==BUFLEN)
-        pos(m_filePos + m_bufPos);
-    }
+  void next()
+  {
+    ++m_bufPos;
+    if (m_bufPos==BUFLEN)
+      pos(m_filePos + m_bufPos);
+  }
 
-    size_t pos()
-    {
-      return m_filePos + m_bufPos;
-    }
+  size_t pos()
+  {
+    return m_filePos + m_bufPos;
+  }
 
-    void pos(size_t value)
+  void pos(size_t value)
+  {
+    if (value < m_filePos || value >= (m_filePos+BUFLEN))
     {
-      if (value < m_filePos || value >= (m_filePos+BUFLEN))
-      {
-        m_filePos = value;
-        m_bufPos = 0;
-        m_file->position(m_filePos);
-        m_file->read(&m_buffer[0], BUFLEN);
-      }
-      else
-        m_bufPos = value - m_filePos;
+      m_filePos = value;
+      m_bufPos = 0;
+      m_file->position(m_filePos);
+      m_file->read(&m_buffer[0], BUFLEN);
     }
+    else
+      m_bufPos = value - m_filePos;
+  }
 
-    bool isEOF()
-    {
-      return m_filePos + m_bufPos >= m_fileSize;
-    }
+  bool isEOF()
+  {
+    return m_filePos + m_bufPos >= m_fileSize;
+  }
 
-    string const extract(size_t from)
-    {
-      string ret(pos()-from, ' ');
-      extract(from, ret.c_str());
-      return ret;
-    }
+  string const extract(size_t from)
+  {
+    string ret(pos()-from, ' ');
+    extract(from, ret.c_str());
+    return ret;
+  }
 
-    void extract(size_t from, char* result)
+  void extract(size_t from, char* result)
+  {
+    if (from > m_filePos)
     {
-      if (from > m_filePos)
-      {
-        memcpy(result, &m_buffer[from-m_filePos], pos()-from);
-      }
-      else
-      {
-        m_file->position(from);
-        m_file->read(result, pos()-from);
-      }
-      // no need to restore position
+      memcpy(result, &m_buffer[from-m_filePos], pos()-from);
     }
+    else
+    {
+      m_file->position(from);
+      m_file->read(result, pos()-from);
+    }
+    // no need to restore position
+  }
 
   private:
 
@@ -527,12 +527,12 @@ namespace fdv
   struct Variable
   {
     Variable(char const* name_, Variant const& value_) :
-      name(name_), value(value_)
-    {
-    }
+  name(name_), value(value_)
+  {
+  }
 
-    string  name;
-    Variant value;
+  string  name;
+  Variant value;
   };
 
 
@@ -649,12 +649,12 @@ namespace fdv
   public:
 
     Script(RunTimeT* globalRunTime, InputBase* input) :
-      m_runTime(globalRunTime),
-      m_input(input),
-      m_progStatus(ST_RUN),
-      m_incode(false)
-    {
-    }
+        m_runTime(globalRunTime),
+          m_input(input),
+          m_progStatus(ST_RUN),
+          m_incode(false)
+        {
+        }
 
 
   private:
@@ -664,36 +664,36 @@ namespace fdv
     {
     public:
       PosSaver(InputBase* input) :
-        m_input(input), m_pos(input->pos())
-      {
-      }
+          m_input(input), m_pos(input->pos())
+          {
+          }
 
-      ~PosSaver()
-      {
-        restore();
-      }
+          ~PosSaver()
+          {
+            restore();
+          }
 
-      bool release()
-      {
-        m_input = NULL;
-        return true;
-      }
+          bool release()
+          {
+            m_input = NULL;
+            return true;
+          }
 
-      void restore()
-      {
-        if (m_input)
-          m_input->pos( m_pos );
-      }
+          void restore()
+          {
+            if (m_input)
+              m_input->pos( m_pos );
+          }
 
-      size_t savedPos()
-      {
-        return m_pos;
-      }
+          size_t savedPos()
+          {
+            return m_pos;
+          }
 
-      void reset()
-      {
-        m_pos = m_input->pos();
-      }
+          void reset()
+          {
+            m_pos = m_input->pos();
+          }
 
     private:
       InputBase* m_input;
@@ -946,24 +946,24 @@ namespace fdv
         m_input->next();
         switch (b)
         {
-          case 'n':
-            *c = 0x0A;
-            break;
-          case 'r':
-            *c = 0x0D;
-            break;
-          case '0':
-            *c = 0x00;
-            break;
-          case 'x': // note: only \xHH is supported (not \xHHHH)
-            char hex[3];
-            hex[0] = m_input->get(); m_input->next(); if (m_input->isEOF()) return false;
-            hex[1] = m_input->get(); m_input->next();
-            hex[2] = 0;
-            *c = strtoul(hex, NULL, 16);
-            break;
-          default:
-            *c = b;
+        case 'n':
+          *c = 0x0A;
+          break;
+        case 'r':
+          *c = 0x0D;
+          break;
+        case '0':
+          *c = 0x00;
+          break;
+        case 'x': // note: only \xHH is supported (not \xHHHH)
+          char hex[3];
+          hex[0] = m_input->get(); m_input->next(); if (m_input->isEOF()) return false;
+          hex[1] = m_input->get(); m_input->next();
+          hex[2] = 0;
+          *c = strtoul(hex, NULL, 16);
+          break;
+        default:
+          *c = b;
         }
         return psaver.release();
       }
@@ -1215,7 +1215,7 @@ namespace fdv
       size_t aindex;
       char nc[2];
       if (parse_variable(sresult, &aindex, exec)
-          && (parse_nchar("--", nc) || parse_nchar("++", nc)))
+        && (parse_nchar("--", nc) || parse_nchar("++", nc)))
       {
         if (exec)
         {
@@ -1288,7 +1288,7 @@ namespace fdv
       string vname;
       size_t aindex;
       if ((parse_nchar("--", nc) || parse_nchar("++", nc))
-          && parse_variable(vname, &aindex, exec))
+        && parse_variable(vname, &aindex, exec))
       {
         if (exec)
         {
@@ -1312,9 +1312,9 @@ namespace fdv
       // ('+' | '-' | '!' | '~') unary_expression
       char op;
       if (parse_1char('+', &op)
-          || parse_1char('-', &op)
-          || parse_1char('!', &op)
-          || parse_1char('~', &op))
+        || parse_1char('-', &op)
+        || parse_1char('!', &op)
+        || parse_1char('~', &op))
       {
         if (parse_unary_expression(result, exec))
         {
@@ -1322,18 +1322,18 @@ namespace fdv
           {
             switch (op)
             {
-              case '+':
-                // nothing to do
-                break;
-              case '-':
-                *result = -(*result);
-                break;
-              case '!':
-                *result = !(*result);
-                break;
-              case '~':
-                *result = ~(*result);
-                break;
+            case '+':
+              // nothing to do
+              break;
+            case '-':
+              *result = -(*result);
+              break;
+            case '!':
+              *result = !(*result);
+              break;
+            case '~':
+              *result = ~(*result);
+              break;
             }
           }
           return psaver.release();
@@ -1416,8 +1416,8 @@ namespace fdv
         // {('*' | '/' | '%') unary_expression}
         char op;
         while (parse_1char('*', &op)
-               || parse_1char('/', &op)
-               || parse_1char('%', &op))
+          || parse_1char('/', &op)
+          || parse_1char('%', &op))
         {
           Variant f;
           if (parse_unary_expression(&f, exec))
@@ -1426,15 +1426,15 @@ namespace fdv
             {
               switch (op)
               {
-                case '*':
-                  *result = *result * f;
-                  break;
-                case '/':
-                  *result = *result / f;
-                  break;
-                case '%':
-                  *result = *result % f;
-                  break;
+              case '*':
+                *result = *result * f;
+                break;
+              case '/':
+                *result = *result / f;
+                break;
+              case '%':
+                *result = *result % f;
+                break;
               }
             }
           }
@@ -1519,9 +1519,9 @@ namespace fdv
         char op[2];
         op[1] = 0;  // final zero in case of '<' and '>'
         while (parse_nchar("<=", op)
-               || parse_nchar(">=", op)
-               || parse_1charCheckNext('<', '<', op)
-               || parse_1charCheckNext('>', '>', op))
+          || parse_nchar(">=", op)
+          || parse_1charCheckNext('<', '<', op)
+          || parse_1charCheckNext('>', '>', op))
         {
           Variant f;
           if (parse_shift_expression(&f, exec))
@@ -1725,8 +1725,8 @@ namespace fdv
         {
           Variant f1, f2;
           if (!parse_expression(&f1, exec && result->toBool()==true)
-              || !parse_1char(':')
-              || !parse_expression(&f2, exec && result->toBool()==false))
+            || !parse_1char(':')
+            || !parse_expression(&f2, exec && result->toBool()==false))
             return false;
           *result = result->toBool()==true? f1 : f2;
         }
@@ -1838,10 +1838,10 @@ namespace fdv
 
       Variant f;
       if (parse_nchar("if")
-          && parse_1char('(')
-          && parse_expression(&f, exec)
-          && parse_1char(')')
-          && parse_statement(exec && f.toBool()==true))
+        && parse_1char('(')
+        && parse_expression(&f, exec)
+        && parse_1char(')')
+        && parse_statement(exec && f.toBool()==true))
       {
         if (parse_nchar("else"))
         {
@@ -1896,10 +1896,10 @@ namespace fdv
           if (!parse_statement(exec))
             return false;
           if (!parse_nchar("while")
-              || !parse_1char('(')
-              || !parse_expression(&f, exec)
-              || !parse_1char(')')
-              || !parse_1char(';'))
+            || !parse_1char('(')
+            || !parse_expression(&f, exec)
+            || !parse_1char(')')
+            || !parse_1char(';'))
             return false;
         } while (f.toBool()==true && exec && m_progStatus!=ST_BREAK);
         m_progStatus = ST_RUN;
@@ -1908,8 +1908,8 @@ namespace fdv
 
       // "for" '(' expression_statement expression ';' [expression] ')' statement
       if (parse_nchar("for")
-          && parse_1char('(')
-          && parse_expression_statement(exec))
+        && parse_1char('(')
+        && parse_expression_statement(exec))
       {
         size_t p1 = m_input->pos();
         for (;;)

@@ -2,7 +2,7 @@
 # Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
 # Copyright (c) 2013 Fabrizio Di Vittorio.
 # All rights reserved.
- 
+
 # GNU GPL LICENSE
 #
 # This module is free software; you can redistribute it and/or
@@ -38,7 +38,7 @@
 namespace fdv
 {
   uint16_t getFreeMem();
-  
+
   inline uint16_t testMem()
   {
     uint16_t m = 1;
@@ -130,40 +130,40 @@ namespace fdv
 
   ////////////////////////////////////////////////////////////////////////////////////////
   // SimpleBuffer
-  
+
   template <typename ItemT>
   class SimpleBuffer
   {
     ItemT* m_data;
-    
+
   public:
-  
+
     SimpleBuffer()
       : m_data(NULL)
     {        
     }
-    
+
     explicit SimpleBuffer(uint16_t size)
       : m_data((ItemT*)malloc(size * sizeof(ItemT)))
     {
     }
-    
+
     ~SimpleBuffer()
     {
       free(m_data);
     }
-    
+
     void reset(uint16_t size)
     {
       free(m_data);
       m_data = (ItemT*)malloc(size * sizeof(ItemT));
     }
-    
+
     ItemT* get()
     {
       return m_data;
     }
-    
+
   };
 
 
@@ -394,9 +394,9 @@ namespace fdv
 
     T* m_data;
   };
-  
-  
-        
+
+
+
 }  // end of namespace fdv
 
 

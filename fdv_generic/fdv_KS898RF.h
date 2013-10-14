@@ -2,7 +2,7 @@
 # Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
 # Copyright (c) 2013 Fabrizio Di Vittorio.
 # All rights reserved.
- 
+
 # GNU GPL LICENSE
 #
 # This module is free software; you can redistribute it and/or
@@ -93,7 +93,7 @@ namespace fdv
     }
 
   private:
-    
+
     CircularBuffer<uint16_t, 4> m_data;
   };
 
@@ -203,14 +203,14 @@ namespace fdv
     {
       switch (symbol)
       {
-        case '1':
-          return 0b01;
-        case 'F':
-          return 0b10;
-        case 'G':
-          return 0b11;
-        default:  // error or '0'
-          return 0b00;
+      case '1':
+        return 0b01;
+      case 'F':
+        return 0b10;
+      case 'G':
+        return 0b11;
+      default:  // error or '0'
+        return 0b00;
       }
     }
 
@@ -218,14 +218,14 @@ namespace fdv
     {
       switch (value)
       {
-        case 0b01:
-          return '1';
-        case 0b10:
-          return 'F';
-        case 0b11:
-          return 'G';
-        default:  // error or '0'
-          return '0';
+      case 0b01:
+        return '1';
+      case 0b10:
+        return 'F';
+      case 0b11:
+        return 'G';
+      default:  // error or '0'
+        return '0';
       }
     }
 
@@ -251,7 +251,7 @@ namespace fdv
   private:
 
     static uint16_t const LARGERMUL             = 2;     // multiplier to compare two values
-    
+
     static uint16_t const MIN_LITTLE_SYNC_PULSE = 100;   // us
     static uint16_t const MAX_LITTLE_SYNC_PULSE = 2000;  // us
     static uint16_t const MIN_LARGE_SYNC_PULSE  = 4000;  // us
@@ -267,7 +267,7 @@ namespace fdv
     static uint8_t const STATUS_SIZE12    = 0b00000100;
     static uint8_t const STATUS_SIZE20    = 0b00001000;
 
- private:
+  private:
 
     Pin const*       m_pin;
     KS898_Buffer     m_buffer;
@@ -282,7 +282,7 @@ namespace fdv
     {
       setStatus(STATUS_SIZE12, true);
       setStatus(STATUS_DATAREADY | STATUS_SIZE20 | STATUS_SYNCFOUND, false);
-      
+
       // setup timer 1 (16 bit)
       TCCR1A = 0;
       TCCR1B = 1 << CS11; // clkIO / 8. At 16Mhz, one increment every 0.5us (500ns)
@@ -297,17 +297,17 @@ namespace fdv
     {
       return m_sensor;
     }
-    
+
     bool getStatus(uint8_t flag) const
     {
       return m_status & flag;
     }
-    
+
     void setStatus(uint8_t flag, bool value)
     {
       m_status = value? (m_status | flag) : (m_status & ~flag);
     }
-            
+
     void discardData()
     {
       m_sensor.clear();
@@ -341,26 +341,26 @@ namespace fdv
 
       // reset timer, start a new measurement
       TCNT1 = 0;
-      
+
       // remove first time if LOW
       if (m_buffer.getState(0) == false)
         m_buffer.del_front(1);
-      
+
       // m_sensor is available for new sensor data?
       if (!getStatus(STATUS_DATAREADY))
       {
         // check buffer for synch
         if (m_buffer.size() > 1 &&
-            m_buffer.getTime(0) >= MIN_LITTLE_SYNC_PULSE * 2 && 
-            m_buffer.getTime(1) >= MIN_LARGE_SYNC_PULSE * 2 &&
-            m_buffer.getTime(0) <= MAX_LITTLE_SYNC_PULSE * 2 && 
-            m_buffer.getTime(1) <= MAX_LARGE_SYNC_PULSE * 2)
+          m_buffer.getTime(0) >= MIN_LITTLE_SYNC_PULSE * 2 && 
+          m_buffer.getTime(1) >= MIN_LARGE_SYNC_PULSE * 2 &&
+          m_buffer.getTime(0) <= MAX_LITTLE_SYNC_PULSE * 2 && 
+          m_buffer.getTime(1) <= MAX_LARGE_SYNC_PULSE * 2)
         {
           discardData();
           setStatus(STATUS_SYNCFOUND, true);
           m_buffer.del_front(2);
         }          
-      
+
         // check buffer for data
         if (m_buffer.size() == 4 && getStatus(STATUS_SYNCFOUND))
         {
@@ -394,7 +394,7 @@ namespace fdv
               setStatus(STATUS_SIZE12, false);
             }              
           }
-          
+
           // sensor valid?
           if (m_sensor.size() == maxSensorSize())
           {
@@ -402,11 +402,11 @@ namespace fdv
           }
         }
       }        
-      
+
       // save measurement
       m_buffer.add(t, st? false : true);      
     }
-    
+
   };
 
 

@@ -2,7 +2,7 @@
 # Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
 # Copyright (c) 2013 Fabrizio Di Vittorio.
 # All rights reserved.
- 
+
 # GNU GPL LICENSE
 #
 # This module is free software; you can redistribute it and/or
@@ -47,7 +47,7 @@ namespace fdv
   // CompileTimeRandom::value will be 0...65535
   struct CompileTimeRandom 
   {
-      enum { value = CompileTimeRandomAlgo<__COUNTER__>::value % 65535 };
+    enum { value = CompileTimeRandomAlgo<__COUNTER__>::value % 65535 };
   };
 
 

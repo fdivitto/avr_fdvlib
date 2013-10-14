@@ -2,7 +2,7 @@
 # Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
 # Copyright (c) 2013 Fabrizio Di Vittorio.
 # All rights reserved.
- 
+
 # GNU GPL LICENSE
 #
 # This module is free software; you can redistribute it and/or
@@ -112,9 +112,9 @@ namespace fdv
     /*
     ~HardwareSPIMaster()
     {
-      --s_HardwareInstances;
-      if (s_HardwareInstances == 0)
-        SPCR &= ~_BV(SPE);
+    --s_HardwareInstances;
+    if (s_HardwareInstances == 0)
+    SPCR &= ~_BV(SPE);
     }
     */
 

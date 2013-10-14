@@ -1,22 +1,22 @@
 /*
- *   This file is part of the AVR-Crypto-Lib.
- *   Copyright (C) 2006, 2007, 2008  Daniel Otte (daniel.otte@rub.de)
- *
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
- *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- *   2011 adapted by Fabrizio Di Vittorio
- */
+*   This file is part of the AVR-Crypto-Lib.
+*   Copyright (C) 2006, 2007, 2008  Daniel Otte (daniel.otte@rub.de)
+*
+*   This program is free software: you can redistribute it and/or modify
+*   it under the terms of the GNU General Public License as published by
+*   the Free Software Foundation, either version 3 of the License, or
+*   (at your option) any later version.
+*
+*   This program is distributed in the hope that it will be useful,
+*   but WITHOUT ANY WARRANTY; without even the implied warranty of
+*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+*   GNU General Public License for more details.
+*
+*   You should have received a copy of the GNU General Public License
+*   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*
+*   2011 adapted by Fabrizio Di Vittorio
+*/
 
 #ifndef FDV_BASE64_H_
 #define FDV_BASE64_H_
@@ -71,20 +71,20 @@ namespace fdv
       }
       switch (term)
       {
-        case 0:
-          if (l % 4 != 0)
-            return -1;
-          return l / 4 * 3;
-        case 1:
-          if (l % 4 != 3)
-            return -1;
-          return (l + 1) / 4 * 3 - 1;
-        case 2:
-          if (l % 4 != 2)
-            return -1;
-          return (l + 2) / 4 * 3 - 2;
-        default:
+      case 0:
+        if (l % 4 != 0)
           return -1;
+        return l / 4 * 3;
+      case 1:
+        if (l % 4 != 3)
+          return -1;
+        return (l + 1) / 4 * 3 - 1;
+      case 2:
+        if (l % 4 != 2)
+          return -1;
+        return (l + 2) / 4 * 3 - 2;
+      default:
+        return -1;
       }
     }
 
@@ -146,7 +146,7 @@ namespace fdv
           idx = 0;
         }
       }
-      finalize:
+finalize:
       /* the final touch */
       if (idx == 0)
         return 0;
@@ -175,9 +175,9 @@ namespace fdv
       {
         a[0] = (((uint8_t*) src)[i * 3 + 0]) >> 2;
         a[1] = (((((uint8_t*) src)[i * 3 + 0]) << 4) | ((((uint8_t*) src)[i * 3
-            + 1]) >> 4)) & 0x3F;
+          + 1]) >> 4)) & 0x3F;
         a[2] = (((((uint8_t*) src)[i * 3 + 1]) << 2) | ((((uint8_t*) src)[i * 3
-            + 2]) >> 6)) & 0x3F;
+          + 2]) >> 6)) & 0x3F;
         a[3] = (((uint8_t*) src)[i * 3 + 2]) & 0x3F;
         for (j = 0; j < 4; ++j)
         {
@@ -187,28 +187,28 @@ namespace fdv
       /* now we do the rest */
       switch (length % 3)
       {
-        case 0:
-          break;
-        case 1:
-          a[0] = (((uint8_t*) src)[i * 3 + 0]) >> 2;
-          a[1] = ((((uint8_t*) src)[i * 3 + 0]) << 4) & 0x3F;
-          *dest++ = bit6toAscii(a[0]);
-          *dest++ = bit6toAscii(a[1]);
-          *dest++ = '=';
-          *dest++ = '=';
-          break;
-        case 2:
-          a[0] = (((uint8_t*) src)[i * 3 + 0]) >> 2;
-          a[1] = (((((uint8_t*) src)[i * 3 + 0]) << 4) | ((((uint8_t*) src)[i
-              * 3 + 1]) >> 4)) & 0x3F;
-          a[2] = ((((uint8_t*) src)[i * 3 + 1]) << 2) & 0x3F;
-          *dest++ = bit6toAscii(a[0]);
-          *dest++ = bit6toAscii(a[1]);
-          *dest++ = bit6toAscii(a[2]);
-          *dest++ = '=';
-          break;
-        default: /* this will not happen! */
-          break;
+      case 0:
+        break;
+      case 1:
+        a[0] = (((uint8_t*) src)[i * 3 + 0]) >> 2;
+        a[1] = ((((uint8_t*) src)[i * 3 + 0]) << 4) & 0x3F;
+        *dest++ = bit6toAscii(a[0]);
+        *dest++ = bit6toAscii(a[1]);
+        *dest++ = '=';
+        *dest++ = '=';
+        break;
+      case 2:
+        a[0] = (((uint8_t*) src)[i * 3 + 0]) >> 2;
+        a[1] = (((((uint8_t*) src)[i * 3 + 0]) << 4) | ((((uint8_t*) src)[i
+          * 3 + 1]) >> 4)) & 0x3F;
+        a[2] = ((((uint8_t*) src)[i * 3 + 1]) << 2) & 0x3F;
+        *dest++ = bit6toAscii(a[0]);
+        *dest++ = bit6toAscii(a[1]);
+        *dest++ = bit6toAscii(a[2]);
+        *dest++ = '=';
+        break;
+      default: /* this will not happen! */
+        break;
       }
       /*  finalize: */
       *dest = '\0';
@@ -221,20 +221,20 @@ namespace fdv
     {
       switch (a)
       {
-        case 'A' ... 'Z':
-          return a - 'A';
-        case 'a' ... 'z':
-          return a - 'a' + 26;
-        case '0' ... '9':
-          return a - '0' + 52;
-        case '+':
-        case '-':
-          return 62;
-        case '/':
-        case '_':
-          return 63;
-        default:
-          return -1;
+      case 'A' ... 'Z':
+        return a - 'A';
+      case 'a' ... 'z':
+        return a - 'a' + 26;
+      case '0' ... '9':
+        return a - '0' + 52;
+      case '+':
+      case '-':
+        return 62;
+      case '/':
+      case '_':
+        return 63;
+      default:
+        return -1;
       }
     }
 

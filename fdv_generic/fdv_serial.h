@@ -2,7 +2,7 @@
 # Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
 # Copyright (c) 2013 Fabrizio Di Vittorio.
 # All rights reserved.
- 
+
 # GNU GPL LICENSE
 #
 # This module is free software; you can redistribute it and/or
@@ -43,47 +43,47 @@
 namespace fdv
 {
 
-  #if defined(FDV_ATMEGA1280_2560)
-    static uint8_t const SERIAL_COUNT = 4;
-  #else
-    static uint8_t const SERIAL_COUNT = 1;
-  #endif
+#if defined(FDV_ATMEGA1280_2560)
+  static uint8_t const SERIAL_COUNT = 4;
+#else
+  static uint8_t const SERIAL_COUNT = 1;
+#endif
 
 
-  #if F_CPU == 16000000L
-    // 16Mhz
-    static uint16_t const BPS_TO_UBR[] PROGMEM = {416, 207, 103, 68, 51, 25, 16, 8};   // 2400, 4800, 9600, 14400, 19200, 38400, 57600, 115200
-  #elif F_CPU == 8000000L
-    // 8Mhz
-    static uint16_t const BPS_TO_UBR[] PROGMEM = {207, 103, 51, 34, 25, 12, 8, 3};     // 2400, 4800, 9600, 14400, 19200, 38400, 57600, 115200
-  #elif F_CPU == 20000000L
-    // 20Mhz
-    static uint16_t const BPS_TO_UBR[] PROGMEM = {520, 259, 129, 86, 64, 32, 21, 10};  // 2400, 4800, 9600, 14400, 19200, 38400, 57600, 115200
-  #else
-    #error Please implements other F_CPU values
-  #endif
-  
+#if F_CPU == 16000000L
+  // 16Mhz
+  static uint16_t const BPS_TO_UBR[] PROGMEM = {416, 207, 103, 68, 51, 25, 16, 8};   // 2400, 4800, 9600, 14400, 19200, 38400, 57600, 115200
+#elif F_CPU == 8000000L
+  // 8Mhz
+  static uint16_t const BPS_TO_UBR[] PROGMEM = {207, 103, 51, 34, 25, 12, 8, 3};     // 2400, 4800, 9600, 14400, 19200, 38400, 57600, 115200
+#elif F_CPU == 20000000L
+  // 20Mhz
+  static uint16_t const BPS_TO_UBR[] PROGMEM = {520, 259, 129, 86, 64, 32, 21, 10};  // 2400, 4800, 9600, 14400, 19200, 38400, 57600, 115200
+#else
+#error Please implements other F_CPU values
+#endif
+
 
 
   uint8_t volatile* const SERIAL_CONF[SERIAL_COUNT][5] =
   {
     {&UBRR0H, &UBRR0L, &UCSR0A, &UCSR0B, &UDR0},
-    #if defined(FDV_ATMEGA1280_2560)
-      {&UBRR1H, &UBRR1L, &UCSR1A, &UCSR1B, &UDR1},
-      {&UBRR2H, &UBRR2L, &UCSR2A, &UCSR2B, &UDR2},
-      {&UBRR3H, &UBRR3L, &UCSR3A, &UCSR3B, &UDR3}
-    #endif
+#if defined(FDV_ATMEGA1280_2560)
+    {&UBRR1H, &UBRR1L, &UCSR1A, &UCSR1B, &UDR1},
+    {&UBRR2H, &UBRR2L, &UCSR2A, &UCSR2B, &UDR2},
+    {&UBRR3H, &UBRR3L, &UCSR3A, &UCSR3B, &UDR3}
+#endif
   };
 
 
   uint8_t const SERIAL_BITS[SERIAL_COUNT][5] =
   {
     {RXEN0, TXEN0, RXCIE0, UDRE0, U2X0},
-    #if defined(FDV_ATMEGA1280_2560)
-      {RXEN1, TXEN1, RXCIE1, UDRE1, U2X1},
-      {RXEN2, TXEN2, RXCIE2, UDRE2, U2X2},
-      {RXEN3, TXEN3, RXCIE3, UDRE3, U2X3}
-    #endif
+#if defined(FDV_ATMEGA1280_2560)
+    {RXEN1, TXEN1, RXCIE1, UDRE1, U2X1},
+    {RXEN2, TXEN2, RXCIE2, UDRE2, U2X2},
+    {RXEN3, TXEN3, RXCIE3, UDRE3, U2X3}
+#endif
   };
 
 
@@ -133,7 +133,7 @@ namespace fdv
     explicit HardwareSerial(BPS bps)
     {
       s_buffer = &m_RXBuffer;    
-      
+
       *SERIAL_CONF[SerialIndexV][UCSRnA] = 0;
       uint16_t const baud_setting = pgm_read_word(&BPS_TO_UBR[bps]);
       *SERIAL_CONF[SerialIndexV][UBRnH] = baud_setting >> 8;
@@ -234,8 +234,8 @@ namespace fdv
           write((uint8_t const*)&sep, 1);
       }
     }
-    
-    
+
+
     void writeIPv4(uint8_t const* IP)
     {
       for (uint8_t i = 0; i != 4; ++i)
@@ -245,8 +245,8 @@ namespace fdv
           write_P(PSTR("."));        
       }
     }    
-    
-    
+
+
     void writeMAC(uint8_t const* MAC)
     {
       for (uint8_t i = 0; i != 6; ++i)
@@ -256,16 +256,16 @@ namespace fdv
           write_P(PSTR(":"));        
       }
     }
-    
-    
+
+
     void writeHEX(uint8_t value)
     {
       static char const hex[] PROGMEM = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};      
       char out[2] = { pgm_read_byte(&hex[value >> 4]), pgm_read_byte(&hex[value & 0x0F]) };
       write((uint8_t const*)&out[0], 2);
     }
-    
-    
+
+
     void writeUInt32(uint32_t value)
     {
       bool printZero = false;
@@ -284,9 +284,9 @@ namespace fdv
         value = value - v * d;
       }
     }
-    
-    
-    
+
+
+
     static RingBuffer* getBuffer()
     {
       return s_buffer;
@@ -296,7 +296,7 @@ namespace fdv
   private:
 
     static RingBuffer* s_buffer;
-    
+
     static uint8_t const UBRnH  = 0;
     static uint8_t const UBRnL  = 1;
     static uint8_t const UCSRnA = 2;
@@ -311,8 +311,8 @@ namespace fdv
 
     RingBuffer m_RXBuffer;
   };
-  
-  
+
+
   template <uint8_t SerialIndexV>
   typename HardwareSerial<SerialIndexV>::RingBuffer* HardwareSerial<SerialIndexV>::s_buffer;
 
@@ -333,7 +333,7 @@ namespace fdv
     return s;
   }
 
-  
+
   template <typename T>
   T& operator<< (T& s, char str)
   {
@@ -349,7 +349,7 @@ namespace fdv
     return s;
   }
 
-  
+
   template <typename T>
   T& operator<< (T& s, uint16_t value)
   {
@@ -376,8 +376,8 @@ namespace fdv
   template <typename T>
   HardwareSerial& operator<< (HardwareSerial& s, T const& v)
   {
-    s.write(toString(v).c_str());
-    return s;
+  s.write(toString(v).c_str());
+  return s;
   }*/
 
 
@@ -409,7 +409,7 @@ namespace fdv
 
 
 
-  #define cout serial
+#define cout serial
 
 
 }

@@ -2,7 +2,7 @@
 # Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
 # Copyright (c) 2013 Fabrizio Di Vittorio.
 # All rights reserved.
- 
+
 # GNU GPL LICENSE
 #
 # This module is free software; you can redistribute it and/or
@@ -49,7 +49,7 @@ namespace fdv
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // a list of linked buffers
-  
+
   struct DataList
   {
     DataList const* next; // NULL = no next
@@ -97,7 +97,7 @@ namespace fdv
         }
       }
     };
-        
+
     uint16_t calcInternetChecksum()
     {
       Enumerator enu(*this);
@@ -128,15 +128,15 @@ namespace fdv
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // LinkAddress (a ethernet address)
-  
+
   struct LinkAddress
   {
-    
+
     LinkAddress()
     {
       memset(&value[0], 0, 6);
     }
-    
+
     LinkAddress(uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4, uint8_t b5, uint8_t b6)
     {
       value[0] = b1;
@@ -146,48 +146,48 @@ namespace fdv
       value[4] = b5;
       value[5] = b6;
     }
-    
+
     explicit LinkAddress(bool broadcast)
     {
       for (uint8_t i = 0; i != 6; ++i)
         value[i] = 0xFF;      
     }
-    
+
     explicit LinkAddress(uint8_t const* value_)
     {
       memcpy(&value[0], value_, 6);
     }
-    
+
     LinkAddress(LinkAddress const& value_)
     {
       memcpy(&value[0], &value_.value[0], 6);
     }
-    
+
     bool operator== (LinkAddress const& rhs) const
     {
       return memcmp(&value[0], &rhs.value[0], 6) == 0;
     }      
-    
+
     bool operator!= (LinkAddress const& rhs) const
     {
       return !(*this == rhs);
     }
-    
+
     uint8_t operator[] (uint8_t index) const
     {
       return value[index];
     }      
-    
+
     uint8_t* data()
     {
       return &value[0];
     }
-    
+
     uint8_t const* data() const
     {
       return &value[0];
     }      
-    
+
     // true is = (0,0,0,0,0,0)
     bool isNull() const
     {
@@ -196,7 +196,7 @@ namespace fdv
           return false;
       return true;
     }
-    
+
     // true is = (0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF)
     bool isBroadcast() const
     {
@@ -205,13 +205,13 @@ namespace fdv
           return false;
       return true;
     }
-    
-                   
+
+
   private:
     uint8_t value[6];
   };
 
-  
+
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // frame used to send packet to link layer
@@ -222,19 +222,19 @@ namespace fdv
     LinkAddress     destAddress;
     uint16_t        type_length;
     DataList const* dataList;
-    
+
     explicit LinkLayerSendFrame(LinkAddress const& srcAddress_, LinkAddress const& destAddress_, uint16_t type_length_, DataList const* dataList_)
       : srcAddress(srcAddress_), destAddress(destAddress_), type_length(type_length_), dataList(dataList_)
     {
     }
-    
+
   };
 
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // abstract frame used to receive packets from link layer
-  
+
   struct LinkLayerReceiveFrame
   {
     LinkAddress destAddress;
@@ -246,16 +246,16 @@ namespace fdv
     virtual uint8_t readByte() = 0;
     virtual uint16_t readWord() = 0;
     virtual void readBlock(void* dstBuffer, uint16_t length) = 0;
-    
+
     LinkLayerReceiveFrame()
     {      
     }
-    
+
     LinkLayerReceiveFrame(LinkAddress const& srcAddress_, LinkAddress const& destAddress_, uint16_t type_length_, uint16_t dataLength_)
       : destAddress(destAddress_), srcAddress(srcAddress_), type_length(type_length_), dataLength(dataLength_)
     {      
     }
-    
+
     void bypass(uint16_t bytesToBypass)
     {
       while (bytesToBypass--)
@@ -268,7 +268,7 @@ namespace fdv
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // interface used by classes that need to receive packets (when recvFrame is called)
-  
+
   struct ILinkLayerListener
   {
     virtual bool processLinkLayerFrame(LinkLayerReceiveFrame* frame) = 0;
@@ -278,7 +278,7 @@ namespace fdv
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // interface used by link layer
-  
+
   struct ILinkLayer
   {
     enum SendResult
@@ -297,14 +297,14 @@ namespace fdv
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // IPAddress  (an IPv4 address)
-  
+
   struct IPAddress
   {
     IPAddress()
     {        
       m_value[0] = m_value[1] = m_value[2] = m_value[3] = 0;
     }
-    
+
     IPAddress(IPAddress const& ip)
     {      
       m_value[0] = ip.m_value[0];
@@ -312,7 +312,7 @@ namespace fdv
       m_value[2] = ip.m_value[2];
       m_value[3] = ip.m_value[3];
     }
-    
+
     IPAddress(uint8_t a, uint8_t b, uint8_t c, uint8_t d)
     {
       m_value[0] = a;
@@ -320,17 +320,17 @@ namespace fdv
       m_value[2] = c;
       m_value[3] = d;
     }
-    
+
     bool isAllZero() const
     {
       return m_value[0] == 0x00 && m_value[1] == 0x00 && m_value[2] == 0x00 && m_value[3] == 0x00;
     }
-    
+
     bool isBroadcast() const
     {
       return (m_value[0] == 0xFF && m_value[1] == 0xFF && m_value[2] == 0xFF && m_value[3] == 0xFF) ||
-             (m_value[3] == 0xFF) ||
-             (m_value[3] == 0x00);
+        (m_value[3] == 0xFF) ||
+        (m_value[3] == 0x00);
     }
 
     bool isMulticast() const
@@ -342,17 +342,17 @@ namespace fdv
     {
       return m_value[0] == rhs.m_value[0] && m_value[1] == rhs.m_value[1] && m_value[2] == rhs.m_value[2] && m_value[3] == rhs.m_value[3];
     }   
-    
+
     bool operator!= (IPAddress const& rhs) const
     {
       return !(*this == rhs);
     }   
-    
+
     IPAddress operator& (IPAddress const& rhs) const
     {
       return IPAddress(m_value[0] & rhs.m_value[0], m_value[1] & rhs.m_value[1], m_value[2] & rhs.m_value[2], m_value[3] & rhs.m_value[3]);
     }
-    
+
     uint8_t const& operator[] (uint8_t index) const
     {
       return m_value[index];
@@ -362,7 +362,7 @@ namespace fdv
     {
       return m_value[index];
     }
-    
+
     void operator= (IPAddress const& rhs)
     {
       m_value[0] = rhs.m_value[0];
@@ -370,7 +370,7 @@ namespace fdv
       m_value[2] = rhs.m_value[2];
       m_value[3] = rhs.m_value[3];      
     }      
-    
+
     uint8_t const* data() const
     {
       return &m_value[0];
@@ -380,7 +380,7 @@ namespace fdv
     {
       return &m_value[0];
     }
-    
+
     // calc number of "1" bits
     // used in route finding algorithm
     int8_t calcRank()
@@ -392,7 +392,7 @@ namespace fdv
             ++r;  
       return r;
     }
-  
+
   private:
     uint8_t m_value[4];  
   };
@@ -405,15 +405,15 @@ namespace fdv
   // This ARP implementation is specific for IPv4 only
   class Protocol_ARP : public ILinkLayerListener
   {
-    
+
   public:
-  
+
     static uint8_t const  MAXINTERFACES = 2;   // maximum number of network interfaces
-    
+
     static uint8_t const  MAXARPENTRIES = 5;
-    
+
     static uint32_t const MAXCACHEITEMAGE = 300000;  // maxium age of a cache item (in seconds)
-    
+
 
     // the ARP table item
     struct Item
@@ -435,13 +435,13 @@ namespace fdv
       {
         return protocolAddress == rhs.protocolAddress && hardwareAddress == rhs.hardwareAddress;
       }
-      
+
       bool isValid()
       {
         return seconds() - creationTime < MAXCACHEITEMAGE;
       }
     };
-    
+
     // ARP packet
     struct ARPPacket
     {
@@ -458,16 +458,16 @@ namespace fdv
 
 
   public:
-  
+
     struct InterfaceEntry
     {
       ILinkLayer* interface;
       IPAddress   address;
-      
+
       InterfaceEntry()
       {
       }
-      
+
       InterfaceEntry(ILinkLayer* interface_, IPAddress const& address_)
         : interface(interface_), address(address_)
       {
@@ -479,62 +479,62 @@ namespace fdv
     Protocol_ARP()
     {
     }
-     
+
     void addInterface(ILinkLayer* interface, IPAddress const& address)
     {
       m_interfaces.push_back(InterfaceEntry(interface, address));
       interface->addListener(this);
     }
-    
+
     Array<InterfaceEntry, MAXINTERFACES> const& interfaces() const
     {
       return m_interfaces;
     }
-    
+
   private:
 
     bool processLinkLayerFrame(LinkLayerReceiveFrame* frame)
     {
-      
-      #ifdef TCPVERBOSE
+
+#ifdef TCPVERBOSE
       serial.write_P(PSTR("ARP::processLinkLayerFrame")); cout << endl;
-      #endif
+#endif
 
       if (frame->type_length == 0x0806 && // check "type_length" ethernet field (0x0806)
-          frame->readWord() == 0x0001 &&  // check Hardware Address Type of ARP field (0x0001 = Ethernet)
-          frame->readWord() == 0x0800 &&  // check Protocol Address Type of ARP field (0x0800 = IPv4)
-          frame->readByte() == 6 &&       // check Hardware Address Length of ARP field (6 = Ethernet)
-          frame->readByte() == 4)         // check Protocol Address Length of ARP field (4 = IPv4)
+        frame->readWord() == 0x0001 &&  // check Hardware Address Type of ARP field (0x0001 = Ethernet)
+        frame->readWord() == 0x0800 &&  // check Protocol Address Type of ARP field (0x0800 = IPv4)
+        frame->readByte() == 6 &&       // check Hardware Address Length of ARP field (6 = Ethernet)
+        frame->readByte() == 4)         // check Protocol Address Length of ARP field (4 = IPv4)
       {
-        #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
         serial.write_P(PSTR("ARP::processLinkLayerFrame: accepted")); cout << endl;
-        #endif
+#endif
 
         uint16_t operation = frame->readWord();
 
         // read source MAC address
         LinkAddress sourceHardwareAddress;
         frame->readBlock(sourceHardwareAddress.data(), 6);
-        #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
         serial.write_P(PSTR("ARP::processLinkLayerFrame: src MAC addr: ")); serial.writeMAC(sourceHardwareAddress.data()); cout << endl;
-        #endif
+#endif
 
         // read source protocol address
         IPAddress sourceProtocolAddress;
         frame->readBlock(sourceProtocolAddress.data(), 4);
-        #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
         serial.write_P(PSTR("ARP::processLinkLayerFrame: src prot addr: ")); serial.writeIPv4(sourceProtocolAddress.data()); cout << endl;
-        #endif
+#endif
 
         // bypass target hardware address
         frame->bypass(6);
-        
+
         // read target protocol address
         IPAddress targetProtocolAddress;
         frame->readBlock(targetProtocolAddress.data(), 4);
-        #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
         serial.write_P(PSTR("ARP::processLinkLayerFrame: dst prot addr: ")); serial.writeIPv4(targetProtocolAddress.data()); cout << endl;
-        #endif
+#endif
 
         // check protocol address
         uint8_t interfaceIndex = 0xFF;
@@ -544,43 +544,43 @@ namespace fdv
             interfaceIndex = i;
             break;
           }
-        if (interfaceIndex == 0xFF)
-        {
-          #ifdef TCPVERBOSE
-          serial.write_P(PSTR("ARP::processLinkLayerFrame: not for me, discard")); cout << endl;
-          #endif
-          return false; // this ARP is not for me!
-        }
+          if (interfaceIndex == 0xFF)
+          {
+#ifdef TCPVERBOSE
+            serial.write_P(PSTR("ARP::processLinkLayerFrame: not for me, discard")); cout << endl;
+#endif
+            return false; // this ARP is not for me!
+          }
 
-        // save sender addresses
-        addCacheTableItem(Item(sourceProtocolAddress, sourceHardwareAddress, seconds()));
+          // save sender addresses
+          addCacheTableItem(Item(sourceProtocolAddress, sourceHardwareAddress, seconds()));
 
-        switch (operation)
-        {
+          switch (operation)
+          {
           case 0x0001:  // Request
             // send reply
-            #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
             serial.write_P(PSTR("ARP::processLinkLayerFrame: ARP request, send reply")); cout << endl;
-            #endif
+#endif
             sendPacket(interfaceIndex, 0x0002, sourceHardwareAddress, sourceProtocolAddress);
             break;
           case 0x0002:  // Reply
             // nothing to do, address already saved
-            #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
             serial.write_P(PSTR("ARP::processLinkLayerFrame: ARP reply, address saved")); cout << endl;
-            #endif
+#endif
             break;
           default:      // unknown
-            #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
             serial.write_P(PSTR("ARP::processLinkLayerFrame: ARP unknown cmd!")); cout << endl;
-            #endif
+#endif
             break;
-        }
-        return true;
+          }
+          return true;
       }
-      #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
       serial.write_P(PSTR("ARP::processLinkLayerFrame: not ARP")); cout << endl;
-      #endif
+#endif
       return false;
     }
 
@@ -596,9 +596,9 @@ namespace fdv
 
       if (item.hardwareAddress.isBroadcast() || item.protocolAddress.isBroadcast() || item.protocolAddress.isMulticast())
       {
-        #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
         serial.write_P(PSTR("ARP::addCacheTableItem: not added")); cout << endl;
-        #endif
+#endif
         return;
       }
       for (uint8_t i = 0; i != m_table.size(); ++i)
@@ -606,7 +606,7 @@ namespace fdv
         if (m_table[i].protocolAddress == item.protocolAddress)
         {
           // update entry
-          #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
           if (m_table[i] == item)
           {
             serial.write_P(PSTR("ARP::addCacheTableItem: exists")); cout << endl;
@@ -615,14 +615,14 @@ namespace fdv
           {
             serial.write_P(PSTR("ARP::addCacheTableItem: updated")); cout << endl;
           }
-          #endif
+#endif
           m_table[i] = item;
           return;
         }
       }
-      #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
       serial.write_P(PSTR("ARP::addCacheTableItem: added")); cout << endl;
-      #endif
+#endif
       m_table.add(item);
     }
 
@@ -631,9 +631,9 @@ namespace fdv
     // targetHardwareAddress can be (0,0,0,0,0,0) if unknown
     bool sendPacket(uint8_t interfaceIndex, uint16_t operation, LinkAddress const& targetHardwareAddress, IPAddress const& targetProtocolAddress)
     {
-      #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
       serial.write_P(PSTR("ARP::sendPacket")); cout << endl;
-      #endif
+#endif
       InterfaceEntry& interfaceEntry = m_interfaces[interfaceIndex];
       ARPPacket packet;
       packet.hardwareAddressType   = Utility::htons(0x0001);
@@ -647,9 +647,9 @@ namespace fdv
       packet.targetProtocolAddress = targetProtocolAddress;
       DataList frameData(NULL, &packet, sizeof(ARPPacket));
       LinkLayerSendFrame frame(interfaceEntry.interface->getAddress(), 
-                               targetHardwareAddress.isNull()? LinkAddress(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF) : targetHardwareAddress,  // if targetHardwareAddress=(0,0,0,0,0,0), it is broadcast
-                               0x0806,      // this is ARP
-                               &frameData);        
+        targetHardwareAddress.isNull()? LinkAddress(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF) : targetHardwareAddress,  // if targetHardwareAddress=(0,0,0,0,0,0), it is broadcast
+        0x0806,      // this is ARP
+        &frameData);        
 
       return interfaceEntry.interface->sendFrame(&frame) == ILinkLayer::SendOK;
     }
@@ -663,30 +663,30 @@ namespace fdv
 
     LinkAddress const* getHardwareAddressFromCache(IPAddress const& targetProtocolAddress)
     {
-      #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
       serial.write_P(PSTR("ARP::getHardwareAddressFromCache")); cout << endl;
-      #endif
+#endif
       for (uint8_t i = 0; i != m_table.size(); ++i)
         if (m_table[i].isValid() && m_table[i].protocolAddress == targetProtocolAddress)
         {
-          #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
           serial.write_P(PSTR("ARP::getHardwareAddressFromCache: found")); cout << endl;
-          #endif
+#endif
           return &m_table[i].hardwareAddress;
         }
-      #ifdef TCPVERBOSE
-      serial.write_P(PSTR("ARP::getHardwareAddressFromCache: not found")); cout << endl;
-      #endif
-      return NULL; // not found
+#ifdef TCPVERBOSE
+        serial.write_P(PSTR("ARP::getHardwareAddressFromCache: not found")); cout << endl;
+#endif
+        return NULL; // not found
     }
 
     // return "NULL" on fail. When fail send an ARP request in broadcast, but doesn't wait for it, so you should loop getHardwareAddress multiple times
     LinkAddress const* getHardwareAddress(uint8_t interfaceIndex, IPAddress const& targetProtocolAddress)
     {
-      #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
       serial.write_P(PSTR("ARP::getHardwareAddress: prot: ")); serial.writeIPv4(targetProtocolAddress.data()); cout << endl;
-      #endif
-      
+#endif
+
       // check cache first
       LinkAddress const* r = getHardwareAddressFromCache(targetProtocolAddress);
 
@@ -695,10 +695,10 @@ namespace fdv
         // not found, send request message
         sendPacket(interfaceIndex, 0x0001, LinkAddress(), targetProtocolAddress);
       }
-      
+
       return r;
     }
-    
+
   private:
 
     CircularBuffer<Item, MAXARPENTRIES>  m_table;           // the ARP table (actually a circular buffer)
@@ -718,31 +718,31 @@ namespace fdv
   {
 
   public:
-  
+
     static uint8_t const  MAXROUTEENTRIES = 3; // routing table size: other dest + local + one free
 
   private:
 
     static uint8_t const  MAXLISTENERS    = 3; 
     static uint32_t const ARPTRYTIMEOUT   = 1500;
-    
+
     struct RouteEntry
     {
       IPAddress destination;
       IPAddress netmask;
       IPAddress gateway;
       uint8_t   interfaceIndex;  
-      
+
       RouteEntry()
       {        
       }
-      
+
       RouteEntry(IPAddress const& destination_, IPAddress const& netmask_, IPAddress const& gateway_, uint8_t interfaceIndex_)
         : destination(destination_), netmask(netmask_), gateway(gateway_), interfaceIndex(interfaceIndex_)
       {          
       }
     };
-        
+
 
   public:
 
@@ -770,33 +770,33 @@ namespace fdv
     {            
     }
 
-    
+
     void setARP(Protocol_ARP* ARP)
     {
       m_ARP = ARP;
       for (uint8_t i = 0; i != m_ARP->interfaces().size(); ++i)
         m_ARP->interfaces()[i].interface->addListener(this);
     }
-    
-    
+
+
     void addRoute(IPAddress const& destination, IPAddress const& netmask, IPAddress const& gateway, uint8_t interfaceIndex)
     {
       m_routingTable.push_back(RouteEntry(destination, netmask, gateway, interfaceIndex));      
     }
-    
+
 
     void addListener(IListener* listener)
     {
       m_listeners.push_back(listener);
     }
 
-  
+
     // return 0xFF on fail  
     uint8_t findInterfaceForAddress(IPAddress const& destAddress, IPAddress* effectiveDestination)
     {
-      #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
       serial.write_P(PSTR("IP::findInterfaceForAddress")); cout << endl;
-      #endif
+#endif
       uint8_t bestRouteIndex = 0xFF;
       int8_t bestRouteRank   = -1;
       for (uint8_t i = 0; i != m_routingTable.size(); ++i)
@@ -817,12 +817,12 @@ namespace fdv
       //cout << "use route " << bestRouteIndex << endl;
       if (bestRouteIndex == 0xFF)
       {
-        #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
         serial.write_P(PSTR("IP::findInterfaceForAddress: no route")); cout << endl;
-        #endif
+#endif
         return 0xFF; // no route  
       }
-        
+
       uint8_t interfaceIndex = m_routingTable[bestRouteIndex].interfaceIndex;
       if (effectiveDestination != NULL) 
       {
@@ -832,9 +832,9 @@ namespace fdv
         else
           *effectiveDestination = destAddress; // yes, don't need the gateway
       }
-      #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
       serial.write_P(PSTR("IP::findInterfaceForAddress: ")); cout << (uint16_t)interfaceIndex << endl;
-      #endif
+#endif
       return interfaceIndex;   
     }
 
@@ -842,11 +842,11 @@ namespace fdv
     // if srcAddress=0.0.0.0 then it is automatically selected from used interface
     bool send(IPAddress const& srcAddress, IPAddress const& destAddress, uint8_t protocol, DataList const& data, bool isRouting)
     {
-      #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
       serial.write_P(PSTR("IP:send: src: ")); serial.writeIPv4(srcAddress.data()); cout << endl;
       serial.write_P(PSTR("IP:send: dst: ")); serial.writeIPv4(destAddress.data()); cout << endl;
-      #endif
-      
+#endif
+
       IPAddress effectiveDestAddress; // this IP address is used only in order to get effective hardware address, not as effective destination IP address
       uint8_t   interfaceIndex = findInterfaceForAddress(destAddress, &effectiveDestAddress);
       if (interfaceIndex == 0xFF)
@@ -856,34 +856,34 @@ namespace fdv
       LinkAddress const* destHardwareAddress = m_ARP->getHardwareAddress(interfaceIndex, effectiveDestAddress);
       if (destHardwareAddress == NULL)  // still not available? Try until ARPTRYTIMEOUT timeouts
       {
-        #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
         serial.write_P(PSTR("IP:send: no hardware addr")); cout << endl;
-        #endif
+#endif
         return false;
         // todo: test
         /*
         TimeOut timeOut(ARPTRYTIMEOUT);
         while ((destHardwareAddress = m_ARP->getHardwareAddressFromCache(effectiveDestAddress)) == NULL && !timeOut)
-          receive();
-          */
+        receive();
+        */
       }
-                        
+
       // avoid routing to the same interface
       if (isRouting && findInterfaceForAddress(srcAddress, NULL) == interfaceIndex)
       {
-        #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
         serial.write_P(PSTR("IP:send: routing failed, same interface!")); cout << endl;
-        #endif
+#endif
         return false;
       }
 
       IPAddress sourceAddress = srcAddress.isAllZero()? m_ARP->interfaces()[interfaceIndex].address : srcAddress;  // is the source IP auto calculated?
-            
+
       if (destHardwareAddress == NULL)
       {
-        #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
         serial.write_P(PSTR("IPsend: fail!")); cout << endl;
-        #endif        
+#endif        
         return false; // failed to get destination hardware address
       }        
 
@@ -930,16 +930,16 @@ namespace fdv
       DataList dataList(&data, &IPHeader[0], 20);
       ILinkLayer* interface = m_ARP->interfaces()[interfaceIndex].interface;
       LinkLayerSendFrame frame(interface->getAddress(), *destHardwareAddress, 0x0800, &dataList);
-                                                                          
+
       return interface->sendFrame(&frame) == ILinkLayer::SendOK;
     }
 
 
     bool processLinkLayerFrame(LinkLayerReceiveFrame* frame)
     {
-      #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
       serial.write_P(PSTR("IP::processLinkLayerFrame")); cout << endl;
-      #endif
+#endif
       if (frame->type_length == 0x0800)
       {
 
@@ -952,9 +952,9 @@ namespace fdv
         uint16_t headerLength = static_cast<uint16_t>(b & 0x0F) * 4;  // header length in bytes
         if (headerLength < 20 || headerLength > frame->dataLength)
         {
-          #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
           serial.write_P(PSTR("IP::processLinkLayerFrame: invalid head len")); cout << endl;
-          #endif
+#endif
           return false; // invalid headerLength                   
         }
         // TOS (bypass)
@@ -963,9 +963,9 @@ namespace fdv
         uint16_t totalLength = frame->readWord();
         if (totalLength < headerLength || totalLength > frame->dataLength)
         {
-          #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
           serial.write_P(PSTR("IP::processLinkLayerFrame: invalid len")); cout << endl;
-          #endif
+#endif
           return false; // invalid totalLength
         }          
         // Identification (bypass)
@@ -988,26 +988,26 @@ namespace fdv
         for (uint8_t i = 20; i != headerLength; ++i)
           frame->readByte();
 
-        #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
         serial.write_P(PSTR("IP::processLinkLayerFrame: src: "));
         serial.writeIPv4(&datagram.sourceAddress[0]);
         serial.write_P(PSTR(" dst: "));
         serial.writeIPv4(&datagram.destAddress[0]);
         cout << endl;
-        #endif
+#endif
 
         // data
         datagram.dataLength = totalLength - headerLength;
         if (getFreeMem() - 200 < datagram.dataLength)
         {
-          #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
           serial.write_P(PSTR("IP:processLinkLayerFrame: cannot allocate")); cout << endl;
-          #endif
+#endif
           return false; // cannot allocate
         }
         SimpleBuffer<uint8_t> dataBuffer(datagram.dataLength);
         if (dataBuffer.get() == NULL)
-            return false; // cannot allocate
+          return false; // cannot allocate
         datagram.data = dataBuffer.get();
         frame->readBlock(datagram.data, datagram.dataLength);
 
@@ -1020,36 +1020,36 @@ namespace fdv
             break;
           }
 
-        // add address to ARP
-        m_ARP->addCacheTableItem(Protocol_ARP::Item(datagram.sourceAddress, frame->srcAddress, seconds()));
+          // add address to ARP
+          m_ARP->addCacheTableItem(Protocol_ARP::Item(datagram.sourceAddress, frame->srcAddress, seconds()));
 
-        if (rightDest)
-        {          
-          #ifdef TCPVERBOSE
-          serial.write_P(PSTR("IP::processLinkLayerFrame: right dst")); cout << endl;
-          #endif
-          
-          // send to listeners
-          for (uint8_t i = 0; i != m_listeners.size(); ++i)
-            if (m_listeners[i]->processIPDatagram(&datagram))
-              break; // message processed   
-        }
-        else if (m_routingEnabled)
-        {
-          // perform routing
-          #ifdef TCPVERBOSE
-          serial.write_P(PSTR("IP::processLinkLayerFrame: route")); cout << endl;
-          #endif
-          send(datagram.sourceAddress, datagram.destAddress, datagram.protocol, DataList(NULL, datagram.data, datagram.dataLength), true);
-        }
+          if (rightDest)
+          {          
+#ifdef TCPVERBOSE
+            serial.write_P(PSTR("IP::processLinkLayerFrame: right dst")); cout << endl;
+#endif
 
-        return true;
+            // send to listeners
+            for (uint8_t i = 0; i != m_listeners.size(); ++i)
+              if (m_listeners[i]->processIPDatagram(&datagram))
+                break; // message processed   
+          }
+          else if (m_routingEnabled)
+          {
+            // perform routing
+#ifdef TCPVERBOSE
+            serial.write_P(PSTR("IP::processLinkLayerFrame: route")); cout << endl;
+#endif
+            send(datagram.sourceAddress, datagram.destAddress, datagram.protocol, DataList(NULL, datagram.data, datagram.dataLength), true);
+          }
+
+          return true;
       }
       else
       {
-        #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
         serial.write_P(PSTR("IP::processLinkLayerFrame: not IP")); cout << endl;
-        #endif
+#endif
         return false; // not IP
       }
     }
@@ -1060,25 +1060,25 @@ namespace fdv
       for (uint8_t i = 0; i != m_ARP->interfaces().size(); ++i)
         m_ARP->interfaces()[i].interface->recvFrame();
     }      
-    
+
 
     Array<Protocol_ARP::InterfaceEntry, Protocol_ARP::MAXINTERFACES> const& interfaces() const
     {
       return m_ARP->interfaces();
     }   
-    
+
 
     void routingEnabled(bool value)
     {
       m_routingEnabled = value;
     }  
-    
+
 
     bool routingEnabled() const
     {
       return m_routingEnabled;
     }
-    
+
 
   private:
 
@@ -1098,7 +1098,7 @@ namespace fdv
 
   class Protocol_ICMP : public Protocol_IP::IListener
   {
-    
+
     static uint32_t const MAXECHOREPLYTIME = 6000;
 
 
@@ -1109,20 +1109,20 @@ namespace fdv
     {
       m_IP->addListener(this);
     }
-        
+
     bool processIPDatagram(Protocol_IP::Datagram* datagram)
     {
-      #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
       serial.write_P(PSTR("ICMP::processIPDatagram")); cout << endl;
-      #endif
+#endif
       if (datagram->protocol == 0x01 && datagram->dataLength >= 8)
       {
         uint8_t* databuf = static_cast<uint8_t*>(datagram->data);
         if (databuf[0] == 8 && databuf[1] == 0)       // received Echo request
         {
-          #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
           serial.write_P(PSTR("ICMP::processIPDatagram: ECHO req")); cout << endl;
-          #endif
+#endif
           // set ICMP type = 0 (echo reply), code = 0
           databuf[0] = 0;
           databuf[1] = 0;
@@ -1139,9 +1139,9 @@ namespace fdv
         }
         else if (databuf[0] == 0 && databuf[1] == 0)  // received Echo reply
         {
-          #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
           serial.write_P(PSTR("ICMP::processIPDatagram: ECHO reply")); cout << endl;
-          #endif
+#endif
           m_receivedID = ((uint16_t)databuf[4] << 8) | databuf[5];
           return true;
         }
@@ -1154,7 +1154,7 @@ namespace fdv
     uint32_t ping(IPAddress const& dest)
     {
       uint32_t t1 = millis();
-      
+
       // prepare Echo Request
       uint16_t id  = Random::nextUInt16(0, 0xFFFF);
       m_receivedID = ~id; // just to make it different
@@ -1175,36 +1175,36 @@ namespace fdv
       data[3] = checksum & 0xFF;      
       // send Echo Request
       m_IP->send(IPAddress(0, 0, 0, 0), dest, 0x01, DataList(NULL, &data[0], sizeof(data)), false);
-      
+
       // wait for reply
       TimeOut timeOut(MAXECHOREPLYTIME);
       while (m_receivedID != id && !timeOut)
         m_IP->receive();
-      
+
       return (m_receivedID == id? millis() - t1 : 0xFFFFFFFF);
     }
-    
+
 
   private:
 
     Protocol_IP* m_IP;  // IP layer
     uint16_t     m_receivedID;
-    
+
   };
 
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Protocol_UDP (User Datagram Protocol)
-  
+
   class Protocol_UDP : public Protocol_IP::IListener
   {
-  
+
   public:
-  
+
     static uint8_t const MAXLISTENERS = 4;
 
-  
+
   public:
 
     struct PseudoHeader
@@ -1229,17 +1229,17 @@ namespace fdv
     {
       virtual bool processUDPDatagram(IPAddress const& sourceAddress, Datagram* datagram) = 0;
     };
-  
-  
+
+
   public:
-  
+
     explicit Protocol_UDP(Protocol_IP* ip)
       : m_IP(ip), m_lastSrcUsedPort(49151)
     {
       m_IP->addListener(this);
     }
-    
-    
+
+
     void addListener(IListener* listener)
     {
       m_listeners.push_back(listener);
@@ -1254,57 +1254,57 @@ namespace fdv
 
     bool processIPDatagram(Protocol_IP::Datagram* datagram)
     {
-      #ifdef TCPVERBOSE
+#ifdef TCPVERBOSE
       serial.write_P(PSTR("UDP::processIPDatagram: src: ")); serial.writeIPv4(datagram->sourceAddress.data()); cout << endl;
       serial.write_P(PSTR("UDP::processIPDatagram: prot: ")); cout << (uint16_t)datagram->protocol << endl;
       //cout << "  len  = " << datagram->dataLength << endl;
-      #endif
+#endif
       if (datagram->protocol == 0x11 && datagram->dataLength >= 8)
       {
         uint8_t* databuf = static_cast<uint8_t*>(datagram->data);
-        
+
         Datagram UDPDatagram;
         UDPDatagram.sourcePort = (uint16_t)databuf[0] << 8 | databuf[1];
         UDPDatagram.destPort   = (uint16_t)databuf[2] << 8 | databuf[3];
         UDPDatagram.dataLength = ((uint16_t)databuf[4] << 8 | databuf[5]) - 8;
         UDPDatagram.data       = &databuf[8];              
-        
+
         for (uint8_t i = 0; i != m_listeners.size(); ++i)
           if (m_listeners[i]->processUDPDatagram(datagram->sourceAddress, &UDPDatagram))
             break;
-          
+
         return true;
       }
       return false;
     }   
-    
-    
+
+
     bool send(uint16_t destPort, IPAddress const& destAddress, DataList const& data)
     {
       m_lastSrcUsedPort = (m_lastSrcUsedPort == 65535? 49152 : m_lastSrcUsedPort + 1);
       return send(m_lastSrcUsedPort, destPort, destAddress, data);
     }
-    
+
 
     bool send(uint16_t srcPort, uint16_t destPort, IPAddress const& destAddress, DataList const& data)
     {
-      
-      #ifdef TCPVERBOSE
+
+#ifdef TCPVERBOSE
       serial.write_P(PSTR("UDP::Send: dst: ")); serial.writeIPv4(destAddress.data()); cout << endl;
-      #endif
+#endif
 
       PseudoHeader pseudoHeader;
-     
+
       uint8_t interfaceIndex = m_IP->findInterfaceForAddress(destAddress, NULL); 
-      
+
       pseudoHeader.sourceAddress = m_IP->interfaces()[interfaceIndex].address;
       pseudoHeader.destAddress   = destAddress;
       pseudoHeader.zeros         = 0x00;
       pseudoHeader.protocol      = 0x11;
       pseudoHeader.length        = Utility::htons(8 + data.calcLength());
-      
+
       uint16_t dataLength = data.calcLength();
-      
+
       uint8_t udphead[8] =
       {
         srcPort >> 8,
@@ -1316,31 +1316,31 @@ namespace fdv
         0,
         0
       };      
-      
+
       DataList datagram(&data, &udphead[0], 8);
-      
+
       // calc checksum      
       uint16_t checksum = DataList(&datagram, &pseudoHeader, sizeof(PseudoHeader)).calcInternetChecksum();
       udphead[6] = checksum >> 8;
       udphead[7] = checksum & 0xFF;
-      
+
       return m_IP->send(IPAddress(0, 0, 0, 0), destAddress, 0x11, datagram, false);
     }     
-    
-    
+
+
     void receive()
     {
       m_IP->receive();
     }
-    
-    
-  
+
+
+
   private:
-  
+
     Protocol_IP*                    m_IP;              // IP layer
     Array<IListener*, MAXLISTENERS> m_listeners;       // upper layer listeners
     uint16_t                        m_lastSrcUsedPort; // next port to use for sending
-    
+
   };  
 
 
@@ -1348,57 +1348,57 @@ namespace fdv
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // StackTCPIP (aggregates Protocol_ARP, Protocol_IP, Protocol_ICMP, Protocol_UDP)
-  
+
   class StackTCPIP
   {
-    
+
   public:
-    
+
     StackTCPIP(IPAddress const& IP, IPAddress const& subnet, IPAddress const& gateway, ILinkLayer* interface, bool routingEnabled)
       : m_IP(routingEnabled),
-        m_ICMP(&m_IP),
-        m_UDP(&m_IP)
+      m_ICMP(&m_IP),
+      m_UDP(&m_IP)
     {      
       m_ARP.addInterface(interface, IP);
       m_IP.setARP(&m_ARP);
       m_IP.addRoute(IP & subnet, subnet, IP, 0);  // myself
       m_IP.addRoute(IPAddress(0, 0, 0, 0), IPAddress(0, 0, 0, 0), gateway, 0);   // default gateway
     }
-    
+
     explicit StackTCPIP(bool routingEnabled)
       : m_IP(routingEnabled),
-        m_ICMP(&m_IP),
-        m_UDP(&m_IP)
+      m_ICMP(&m_IP),
+      m_UDP(&m_IP)
     {      
     }
-    
+
     void yield()
     {
       m_UDP.receive();
     }
-    
+
     Protocol_UDP& UDP()
     {
       return m_UDP;
     }
-    
+
     Protocol_ICMP& ICMP()
     {
       return m_ICMP;
     }
-    
+
     Protocol_IP& IP()
     {
       return m_IP;
     }
-    
+
     Protocol_ARP& ARP()
     {
       return m_ARP;
     }
-  
+
   private:  
-  
+
     Protocol_ARP  m_ARP;
     Protocol_IP   m_IP;
     Protocol_ICMP m_ICMP;
@@ -1413,7 +1413,7 @@ namespace fdv
 
   class Socket : Protocol_UDP::IListener
   {
-    
+
   public:
 
     enum Protocol { UDP };
@@ -1423,9 +1423,9 @@ namespace fdv
     {
       switch (m_protocol)
       {
-        case UDP:
-          m_stack->UDP().addListener(this);
-          break;
+      case UDP:
+        m_stack->UDP().addListener(this);
+        break;
       }
     }
 
@@ -1433,9 +1433,9 @@ namespace fdv
     {
       switch (m_protocol)
       {
-        case UDP:
-          m_stack->UDP().delListener(this);
-          break;
+      case UDP:
+        m_stack->UDP().delListener(this);
+        break;
       }
     }
 
@@ -1478,10 +1478,10 @@ namespace fdv
       DataList data(NULL, buffer, bufferSize);
       switch (m_protocol)
       {
-        case UDP:
-          return m_stack->UDP().send(port, destAddress, data);
-        default:
-          return false;
+      case UDP:
+        return m_stack->UDP().send(port, destAddress, data);
+      default:
+        return false;
       }
     }
 
@@ -1502,17 +1502,17 @@ namespace fdv
   ////////////////////////////////////////////////////////////////////////////////////////
   // SNTPClient
   // Gets current date/time from a NTP (SNTP) server (default is pool.ntp.org).
-  
+
   class SNTPClient
   {
-    
+
   public:
-    
+
     explicit SNTPClient(StackTCPIP* stackTCPIP, IPAddress serverIP = IPAddress(169, 229, 70, 64), uint16_t port = 123)
       : m_stackTCPIP(stackTCPIP), m_server(serverIP), m_port(port)
     {
     }
-    
+
     // you should call DateTime.setNTPDateTime((uint8_t const*)&outValue, timezone)
     bool query(uint64_t* outValue) const
     {
@@ -1539,7 +1539,7 @@ namespace fdv
 
       return false;  // error
     }
-    
+
 
   private:
 

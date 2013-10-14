@@ -2,7 +2,7 @@
 # Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
 # Copyright (c) 2013 Fabrizio Di Vittorio.
 # All rights reserved.
- 
+
 # GNU GPL LICENSE
 #
 # This module is free software; you can redistribute it and/or
@@ -59,7 +59,7 @@ namespace fdv
   public:
 
     explicit DS2406(Pin const* pin) :
-      m_onewire(pin)
+    m_onewire(pin)
     {
     }
 

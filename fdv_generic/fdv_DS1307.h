@@ -2,7 +2,7 @@
 # Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
 # Copyright (c) 2013 Fabrizio Di Vittorio.
 # All rights reserved.
- 
+
 # GNU GPL LICENSE
 #
 # This module is free software; you can redistribute it and/or
@@ -61,7 +61,7 @@ namespace fdv
 
 
     DS1307(uint8_t address = 0x68)
-    : m_address(address)
+      : m_address(address)
     {
     }
 
@@ -71,16 +71,16 @@ namespace fdv
     // 3) Sets hour mode to 24 hour clock
     void setDateTime(DateTime const& dt)
     {
-       uint8_t buffer[8];
-       buffer[0] = 0;
-       buffer[1] = decToBcd(dt.seconds);         // 0-59
-       buffer[2] = decToBcd(dt.minutes);         // 0-59
-       buffer[3] = decToBcd(dt.hours);           // 0-23
-       buffer[4] = decToBcd(dt.dayOfWeek()+1);   // 1-7 (1=sunday)
-       buffer[5] = decToBcd(dt.day);             // 1-28/29/30/31
-       buffer[6] = decToBcd(dt.month);           // 1-12
-       buffer[7] = decToBcd(dt.year-2000);       // 0-99
-       m_I2C.writeTo(m_address, &buffer[0], 8);
+      uint8_t buffer[8];
+      buffer[0] = 0;
+      buffer[1] = decToBcd(dt.seconds);         // 0-59
+      buffer[2] = decToBcd(dt.minutes);         // 0-59
+      buffer[3] = decToBcd(dt.hours);           // 0-23
+      buffer[4] = decToBcd(dt.dayOfWeek()+1);   // 1-7 (1=sunday)
+      buffer[5] = decToBcd(dt.day);             // 1-28/29/30/31
+      buffer[6] = decToBcd(dt.month);           // 1-12
+      buffer[7] = decToBcd(dt.year-2000);       // 0-99
+      m_I2C.writeTo(m_address, &buffer[0], 8);
     }
 
 

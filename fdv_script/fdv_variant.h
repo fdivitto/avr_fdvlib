@@ -2,7 +2,7 @@
 # Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
 # Copyright (c) 2013 Fabrizio Di Vittorio.
 # All rights reserved.
- 
+
 # GNU GPL LICENSE
 #
 # This module is free software; you can redistribute it and/or
@@ -27,7 +27,7 @@
 
 
 #if defined(__AVR__)
-  #include "../fdv_generic/fdv_string.h"
+#include "../fdv_generic/fdv_string.h"
 #endif
 
 
@@ -53,59 +53,59 @@ namespace fdv
 
     Variant() :
       m_type(INVALID)
-    {
-    }
-
-    explicit Variant(Variant* value) :
-      m_type(REFERENCE), m_refVal(value)
-    {
-    }
-
-    explicit Variant(char const* value) :
-      m_type(STRING), m_stringVal(new string(value))
-    {
-    }
-
-    explicit Variant(string const& value) :
-      m_type(STRING), m_stringVal(new string(value))
-    {
-    }
-
-    explicit Variant(vector<Variant> const& value) :
-      m_type(ARRAY), m_arrayVal(new vector<Variant>(value))
-    {
-    }
-
-    explicit Variant(float value) :
-      m_type(FLOAT), m_floatVal(value)
-    {
-    }
-
-    explicit Variant(double value) :
-      m_type(FLOAT), m_floatVal(value)
-    {
-    }
-
-    explicit Variant(uint8_t value) :
-      m_type(UINT8), m_uint8Val(value)
-    {
-    }
-
-    explicit Variant(uint16_t value) :
-      m_type(UINT16), m_uint16Val(value)
-    {
-    }
-
-    explicit Variant(uint32_t value) :
-      m_type(UINT32), m_uint32Val(value)
-    {
-    }
-
-    Variant(Variant const& c) :
-      m_type(c.m_type)
-    {
-      switch (m_type)
       {
+      }
+
+      explicit Variant(Variant* value) :
+      m_type(REFERENCE), m_refVal(value)
+      {
+      }
+
+      explicit Variant(char const* value) :
+      m_type(STRING), m_stringVal(new string(value))
+      {
+      }
+
+      explicit Variant(string const& value) :
+      m_type(STRING), m_stringVal(new string(value))
+      {
+      }
+
+      explicit Variant(vector<Variant> const& value) :
+      m_type(ARRAY), m_arrayVal(new vector<Variant>(value))
+      {
+      }
+
+      explicit Variant(float value) :
+      m_type(FLOAT), m_floatVal(value)
+      {
+      }
+
+      explicit Variant(double value) :
+      m_type(FLOAT), m_floatVal(value)
+      {
+      }
+
+      explicit Variant(uint8_t value) :
+      m_type(UINT8), m_uint8Val(value)
+      {
+      }
+
+      explicit Variant(uint16_t value) :
+      m_type(UINT16), m_uint16Val(value)
+      {
+      }
+
+      explicit Variant(uint32_t value) :
+      m_type(UINT32), m_uint32Val(value)
+      {
+      }
+
+      Variant(Variant const& c) :
+      m_type(c.m_type)
+      {
+        switch (m_type)
+        {
         case STRING:
           m_stringVal = new string(*c.m_stringVal);
           break;
@@ -115,18 +115,18 @@ namespace fdv
         default:
           m_uint32Val = c.m_uint32Val; // copies largest value
           break;
+        }
       }
-    }
 
-    ~Variant()
-    {
-      clear();
-    }
-
-    uint16_t size()
-    {
-      switch (m_type)
+      ~Variant()
       {
+        clear();
+      }
+
+      uint16_t size()
+      {
+        switch (m_type)
+        {
         case REFERENCE:
           return sizeof(Variant*);
         case ARRAY:
@@ -143,15 +143,15 @@ namespace fdv
           return sizeof(uint32_t);
         default:
           return 0;
+        }
       }
-    }
 
-    void operator=(Variant const& c)
-    {
-      clear();
-      m_type = c.m_type;
-      switch (m_type)
+      void operator=(Variant const& c)
       {
+        clear();
+        m_type = c.m_type;
+        switch (m_type)
+        {
         case STRING:
           m_stringVal = new string(*c.m_stringVal);
           break;
@@ -161,37 +161,37 @@ namespace fdv
         default:
           m_uint32Val = c.m_uint32Val; // copies largest value
           break;
+        }
       }
-    }
 
-    void operator=(bool v)
-    {
-      uint8Val() = v;
-    }
-
-    void clear()
-    {
-      if (m_type==STRING)
-        delete m_stringVal;
-      else if (m_type==ARRAY)
-        delete m_arrayVal;
-      m_type = INVALID;
-    }
-
-    Type type() const
-    {
-      return m_type;
-    }
-
-    // true = new type assigned (false, no change necessary)
-    bool type(Type type_)
-    {
-      if (type_ != m_type)
+      void operator=(bool v)
       {
-        clear();
-        m_type = type_;
-        switch (m_type)
+        uint8Val() = v;
+      }
+
+      void clear()
+      {
+        if (m_type==STRING)
+          delete m_stringVal;
+        else if (m_type==ARRAY)
+          delete m_arrayVal;
+        m_type = INVALID;
+      }
+
+      Type type() const
+      {
+        return m_type;
+      }
+
+      // true = new type assigned (false, no change necessary)
+      bool type(Type type_)
+      {
+        if (type_ != m_type)
         {
+          clear();
+          m_type = type_;
+          switch (m_type)
+          {
           case STRING:
             m_stringVal = new string;
             break;
@@ -201,34 +201,34 @@ namespace fdv
           default:
             m_uint32Val = 0;  // init largest value
             break;
+          }
+          return true;
         }
-        return true;
+        return false;
       }
-      return false;
-    }
 
 
   private:
 
-    #if defined(__AVR__)
+#if defined(__AVR__)
 
-      template <typename T>
-      static string const toString(T f)
-      {
-        return fdv::toString(f);
-      }
+    template <typename T>
+    static string const toString(T f)
+    {
+      return fdv::toString(f);
+    }
 
-    #else
+#else
 
-      template <typename T>
-      static string const toString(T f)
-      {
-        ostringstream ss;
-        ss << (double)f;
-        return ss.str();
-      }
+    template <typename T>
+    static string const toString(T f)
+    {
+      ostringstream ss;
+      ss << (double)f;
+      return ss.str();
+    }
 
-    #endif
+#endif
 
     // note: convert to a dynamic array (array initialization)
     static string const toString(vector<Variant>& a)
@@ -272,22 +272,22 @@ namespace fdv
     {
       switch (m_type)
       {
-        case REFERENCE:
-          return toString(uint16_t(m_refVal));  // prints pointer
-        case STRING:
-          return *m_stringVal;
-        case ARRAY:
-          return toString(*m_arrayVal);
-        case FLOAT:
-          return toString(m_floatVal);
-        case UINT8:
-          return toString(m_uint8Val);
-        case UINT16:
-          return toString(m_uint16Val);
-        case UINT32:
-          return toString(m_uint32Val);
-        default:
-          return string();
+      case REFERENCE:
+        return toString(uint16_t(m_refVal));  // prints pointer
+      case STRING:
+        return *m_stringVal;
+      case ARRAY:
+        return toString(*m_arrayVal);
+      case FLOAT:
+        return toString(m_floatVal);
+      case UINT8:
+        return toString(m_uint8Val);
+      case UINT16:
+        return toString(m_uint16Val);
+      case UINT32:
+        return toString(m_uint32Val);
+      default:
+        return string();
       }
     }
 
@@ -295,18 +295,18 @@ namespace fdv
     {
       switch (m_type)
       {
-        case STRING:
-          return strtod(m_stringVal->c_str(), NULL);
-        case FLOAT:
-          return m_floatVal;
-        case UINT8:
-          return m_uint8Val;
-        case UINT16:
-          return m_uint16Val;
-        case UINT32:
-          return m_uint32Val;
-        default:
-          return 0.0;
+      case STRING:
+        return strtod(m_stringVal->c_str(), NULL);
+      case FLOAT:
+        return m_floatVal;
+      case UINT8:
+        return m_uint8Val;
+      case UINT16:
+        return m_uint16Val;
+      case UINT32:
+        return m_uint32Val;
+      default:
+        return 0.0;
       }
     }
 
@@ -314,18 +314,18 @@ namespace fdv
     {
       switch (m_type)
       {
-        case STRING:
-          return strtoul(m_stringVal->c_str(), NULL, 10);
-        case FLOAT:
-          return (uint32_t)m_floatVal;
-        case UINT8:
-          return m_uint8Val;
-        case UINT16:
-          return m_uint16Val;
-        case UINT32:
-          return m_uint32Val;
-        default:
-          return 0;
+      case STRING:
+        return strtoul(m_stringVal->c_str(), NULL, 10);
+      case FLOAT:
+        return (uint32_t)m_floatVal;
+      case UINT8:
+        return m_uint8Val;
+      case UINT16:
+        return m_uint16Val;
+      case UINT32:
+        return m_uint32Val;
+      default:
+        return 0;
       }
     }
 
@@ -333,22 +333,22 @@ namespace fdv
     {
       switch (m_type)
       {
-        case REFERENCE:
-          return m_refVal != NULL;
-        case STRING:
-          return !m_stringVal->empty(); // TODO: should convert from "true/false/0/1" to int?
-        case ARRAY:
-          return !m_arrayVal->empty();
-        case FLOAT:
-          return m_floatVal != 0.0;
-        case UINT8:
-          return m_uint8Val != 0;
-        case UINT16:
-          return m_uint16Val != 0;
-        case UINT32:
-          return m_uint32Val != 0;
-        default:
-          return false;
+      case REFERENCE:
+        return m_refVal != NULL;
+      case STRING:
+        return !m_stringVal->empty(); // TODO: should convert from "true/false/0/1" to int?
+      case ARRAY:
+        return !m_arrayVal->empty();
+      case FLOAT:
+        return m_floatVal != 0.0;
+      case UINT8:
+        return m_uint8Val != 0;
+      case UINT16:
+        return m_uint16Val != 0;
+      case UINT32:
+        return m_uint32Val != 0;
+      default:
+        return false;
       }
     }
 
@@ -408,20 +408,20 @@ namespace fdv
     {
       switch (m_type)
       {
-        case FLOAT:
-          --m_floatVal;
-          break;
-        case UINT8:
-          --m_uint8Val;
-          break;
-        case UINT16:
-          --m_uint16Val;
-          break;
-        case UINT32:
-          --m_uint32Val;
-          break;
-        default:
-          break;
+      case FLOAT:
+        --m_floatVal;
+        break;
+      case UINT8:
+        --m_uint8Val;
+        break;
+      case UINT16:
+        --m_uint16Val;
+        break;
+      case UINT32:
+        --m_uint32Val;
+        break;
+      default:
+        break;
       }
     }
 
@@ -429,20 +429,20 @@ namespace fdv
     {
       switch (m_type)
       {
-        case FLOAT:
-          ++m_floatVal;
-          break;
-        case UINT8:
-          ++m_uint8Val;
-          break;
-        case UINT16:
-          ++m_uint16Val;
-          break;
-        case UINT32:
-          ++m_uint32Val;
-          break;
-        default:
-          break;
+      case FLOAT:
+        ++m_floatVal;
+        break;
+      case UINT8:
+        ++m_uint8Val;
+        break;
+      case UINT16:
+        ++m_uint16Val;
+        break;
+      case UINT32:
+        ++m_uint32Val;
+        break;
+      default:
+        break;
       }
     }
 
@@ -450,22 +450,22 @@ namespace fdv
     {
       switch (m_type)
       {
-        case STRING:  // no change
-          return Variant(*m_stringVal);
-        case ARRAY:   // no change
-          return Variant(*m_arrayVal);
-        case FLOAT:
-          return Variant(-m_floatVal);
-          /*
+      case STRING:  // no change
+        return Variant(*m_stringVal);
+      case ARRAY:   // no change
+        return Variant(*m_arrayVal);
+      case FLOAT:
+        return Variant(-m_floatVal);
+        /*
         case UINT8:
-          return Variant((uint8_t)-m_uint8Val);
+        return Variant((uint8_t)-m_uint8Val);
         case UINT16:
-          return Variant((uint16_t)-m_uint16Val);
+        return Variant((uint16_t)-m_uint16Val);
         case UINT32:
-          return Variant(-m_uint32Val);
-          */
-        default:
-          return Variant(-toFloat()); // until signed integers will be supported
+        return Variant(-m_uint32Val);
+        */
+      default:
+        return Variant(-toFloat()); // until signed integers will be supported
       }
     }
 
@@ -473,20 +473,20 @@ namespace fdv
     {
       switch (m_type)
       {
-        case STRING:  // no change
-          return Variant(*m_stringVal);
-        case ARRAY:   // no change
-          return Variant(*m_arrayVal);
-        case FLOAT:
-          return Variant(m_floatVal?1.0:0.0);
-        case UINT8:
-          return Variant((uint8_t)!m_uint8Val);
-        case UINT16:
-          return Variant((uint16_t)!m_uint16Val);
-        case UINT32:
-          return Variant((uint32_t)!m_uint32Val);
-        default:
-          return Variant();
+      case STRING:  // no change
+        return Variant(*m_stringVal);
+      case ARRAY:   // no change
+        return Variant(*m_arrayVal);
+      case FLOAT:
+        return Variant(m_floatVal?1.0:0.0);
+      case UINT8:
+        return Variant((uint8_t)!m_uint8Val);
+      case UINT16:
+        return Variant((uint16_t)!m_uint16Val);
+      case UINT32:
+        return Variant((uint32_t)!m_uint32Val);
+      default:
+        return Variant();
       }
     }
 
@@ -494,20 +494,20 @@ namespace fdv
     {
       switch (m_type)
       {
-        case STRING:  // no change
-          return Variant(*m_stringVal);
-        case FLOAT:   // no change
-          return Variant(m_floatVal);
-        case ARRAY:   // no change
-          return Variant(*m_arrayVal);
-        case UINT8:
-          return Variant((uint8_t)~m_uint8Val);
-        case UINT16:
-          return Variant((uint16_t)~m_uint16Val);
-        case UINT32:
-          return Variant((uint32_t)~m_uint32Val);
-        default:
-          return Variant();
+      case STRING:  // no change
+        return Variant(*m_stringVal);
+      case FLOAT:   // no change
+        return Variant(m_floatVal);
+      case ARRAY:   // no change
+        return Variant(*m_arrayVal);
+      case UINT8:
+        return Variant((uint8_t)~m_uint8Val);
+      case UINT16:
+        return Variant((uint16_t)~m_uint16Val);
+      case UINT32:
+        return Variant((uint32_t)~m_uint32Val);
+      default:
+        return Variant();
       }
     }
 

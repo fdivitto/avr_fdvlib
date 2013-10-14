@@ -1,22 +1,22 @@
 /* Arduino SdFat Library
- * Copyright (C) 2009 by William Greiman
- *  
- * This file is part of the Arduino SdFat Library
- *  
- * This Library is free software: you can redistribute it and/or modify 
- * it under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- * 
- * This Library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with the Arduino SdFat Library.  If not, see
- * <http://www.gnu.org/licenses/>.
- */
+* Copyright (C) 2009 by William Greiman
+*  
+* This file is part of the Arduino SdFat Library
+*  
+* This Library is free software: you can redistribute it and/or modify 
+* it under the terms of the GNU General Public License as published by 
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+* 
+* This Library is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with the Arduino SdFat Library.  If not, see
+* <http://www.gnu.org/licenses/>.
+*/
 
 /**
 \mainpage Arduino SdFat Library
@@ -108,7 +108,7 @@ Short names are always converted to upper case and their original case
 value is lost.
 
 \note
-  The Arduino Print class uses character
+The Arduino Print class uses character
 at a time writes so it was necessary to use a \link SdFile::sync() sync() \endlink
 function to control when data is written to the SD card.
 
@@ -197,6 +197,6 @@ http://www.sdcard.org/developers/tech/sdcard/pls/Simplified_Physical_Layer_Spec.
 The ATmega328 datasheet:
 
 http://www.atmel.com/dyn/resources/prod_documents/doc8161.pdf
- 
 
- */  
+
+*/  

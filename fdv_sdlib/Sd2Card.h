@@ -1,28 +1,28 @@
 /* Arduino Sd2Card Library
- * Copyright (C) 2009 by William Greiman
- *
- * This file is part of the Arduino Sd2Card Library
- *
- * This Library is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This Library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with the Arduino Sd2Card Library.  If not, see
- * <http://www.gnu.org/licenses/>.
- */
+* Copyright (C) 2009 by William Greiman
+*
+* This file is part of the Arduino Sd2Card Library
+*
+* This Library is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This Library is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with the Arduino Sd2Card Library.  If not, see
+* <http://www.gnu.org/licenses/>.
+*/
 #ifndef Sd2Card_h
 #define Sd2Card_h
 /**
- * \file
- * Sd2Card class
- */
+* \file
+* Sd2Card class
+*/
 #include "../fdv_generic/fdv_spi.h"
 
 using fdv::HardwareSPIMaster;
@@ -37,13 +37,13 @@ uint8_t const SPI_HALF_SPEED = 1;
 /** Set SCK rate to F_CPU/8. Sd2Card::setSckRate(). */
 uint8_t const SPI_QUARTER_SPEED = 2;
 /**
- * Define MEGA_SOFT_SPI non-zero to use software SPI on Mega Arduinos.
- * Pins used are SS 10, MOSI 11, MISO 12, and SCK 13.
- *
- * MEGA_SOFT_SPI allows an unmodified Adafruit GPS Shield to be used
- * on Mega Arduinos.  Software SPI works well with GPS Shield V1.1
- * but many SD cards will fail with GPS Shield V1.0.
- */
+* Define MEGA_SOFT_SPI non-zero to use software SPI on Mega Arduinos.
+* Pins used are SS 10, MOSI 11, MISO 12, and SCK 13.
+*
+* MEGA_SOFT_SPI allows an unmodified Adafruit GPS Shield to be used
+* on Mega Arduinos.  Software SPI works well with GPS Shield V1.1
+* but many SD cards will fail with GPS Shield V1.0.
+*/
 //#define MEGA_SOFT_SPI 0
 //------------------------------------------------------------------------------
 //#if MEGA_SOFT_SPI && (defined(__AVR_ATmega1280__)||defined(__AVR_ATmega2560__))
@@ -55,12 +55,12 @@ uint8_t const SPI_QUARTER_SPEED = 2;
 //#ifndef SOFTWARE_SPI
 // hardware pin defs
 /**
- * SD Chip Select pin
- *
- * Warning if this pin is redefined the hardware SS will pin will be enabled
- * as an output by init().  An avr processor will not function as an SPI
- * master unless SS is set to output mode.
- */
+* SD Chip Select pin
+*
+* Warning if this pin is redefined the hardware SS will pin will be enabled
+* as an output by init().  An avr processor will not function as an SPI
+* master unless SS is set to output mode.
+*/
 /** The default chip select pin for the SD card is SS. */
 //uint8_t const  SD_CHIP_SELECT_PIN = SS_PIN;
 // The following three pins must not be redefined for hardware SPI.
@@ -151,38 +151,38 @@ uint8_t const SD_CARD_TYPE_SD2 = 2;
 uint8_t const SD_CARD_TYPE_SDHC = 3;
 //------------------------------------------------------------------------------
 /**
- * \class Sd2Card
- * \brief Raw access to SD and SDHC flash memory cards.
- */
+* \class Sd2Card
+* \brief Raw access to SD and SDHC flash memory cards.
+*/
 class Sd2Card {
- public:
+public:
   /** Construct an instance of Sd2Card. */
   Sd2Card(HardwareSPIMaster* spi) : spi_(spi), errorCode_(0), inBlock_(0), partialBlockRead_(0), type_(0) {}
   uint32_t cardSize(void);
   uint8_t erase(uint32_t firstBlock, uint32_t lastBlock);
   uint8_t eraseSingleBlockEnable(void);
   /**
-   * \return error code for last error. See Sd2Card.h for a list of error codes.
-   */
+  * \return error code for last error. See Sd2Card.h for a list of error codes.
+  */
   uint8_t errorCode(void) const {return errorCode_;}
   /** \return error data for last error. */
   uint8_t errorData(void) const {return status_;}
   /**
-   * Initialize an SD flash memory card with default clock rate and chip
-   * select pin.  See sd2Card::init(uint8_t sckRateID, uint8_t chipSelectPin).
-   */
+  * Initialize an SD flash memory card with default clock rate and chip
+  * select pin.  See sd2Card::init(uint8_t sckRateID, uint8_t chipSelectPin).
+  */
   /*
   uint8_t init(void) {
-    return init(SPI_FULL_SPEED, SD_CHIP_SELECT_PIN);
+  return init(SPI_FULL_SPEED, SD_CHIP_SELECT_PIN);
   }*/
   /**
-   * Initialize an SD flash memory card with the selected SPI clock rate
-   * and the default SD chip select pin.
-   * See sd2Card::init(uint8_t sckRateID, uint8_t chipSelectPin).
-   */
+  * Initialize an SD flash memory card with the selected SPI clock rate
+  * and the default SD chip select pin.
+  * See sd2Card::init(uint8_t sckRateID, uint8_t chipSelectPin).
+  */
   /*
   uint8_t init(uint8_t sckRateID) {
-    return init(sckRateID, SD_CHIP_SELECT_PIN);
+  return init(sckRateID, SD_CHIP_SELECT_PIN);
   }*/
   uint8_t init(/*uint8_t sckRateID, uint8_t chipSelectPin*/);
   void partialBlockRead(uint8_t value);
@@ -190,17 +190,17 @@ class Sd2Card {
   uint8_t partialBlockRead(void) const {return partialBlockRead_;}
   uint8_t readBlock(uint32_t block, uint8_t* dst);
   uint8_t readData(uint32_t block,
-          uint16_t offset, uint16_t count, uint8_t* dst);
+    uint16_t offset, uint16_t count, uint8_t* dst);
   /**
-   * Read a cards CID register. The CID contains card identification
-   * information such as Manufacturer ID, Product name, Product serial
-   * number and Manufacturing date. */
+  * Read a cards CID register. The CID contains card identification
+  * information such as Manufacturer ID, Product name, Product serial
+  * number and Manufacturing date. */
   uint8_t readCID(cid_t* cid) {
     return readRegister(CMD10, cid);
   }
   /**
-   * Read a cards CSD register. The CSD contains Card-Specific Data that
-   * provides information regarding access to the card's contents. */
+  * Read a cards CSD register. The CSD contains Card-Specific Data that
+  * provides information regarding access to the card's contents. */
   uint8_t readCSD(csd_t* csd) {
     return readRegister(CMD9, csd);
   }
@@ -212,7 +212,7 @@ class Sd2Card {
   uint8_t writeData(const uint8_t* src);
   uint8_t writeStart(uint32_t blockNumber, uint32_t eraseCount);
   uint8_t writeStop(void);
- private:
+private:
 
   HardwareSPIMaster* spi_;
   void spiSend(uint8_t b) { spi_->write(b); }

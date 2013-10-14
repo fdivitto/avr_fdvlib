@@ -2,7 +2,7 @@
 # Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
 # Copyright (c) 2013 Fabrizio Di Vittorio.
 # All rights reserved.
- 
+
 # GNU GPL LICENSE
 #
 # This module is free software; you can redistribute it and/or
@@ -40,36 +40,36 @@
 namespace fdv
 {
 
-  
+
 
   template <typename T>
   inline T const& min(T const& a, T const& b)
   {
     return a < b ? a : b;
   }
-  
-  
+
+
   template <typename T, typename Compare>
   inline T const& min(T const& a, T const& b, Compare comp)
   {
     return comp(a, b) ? a : b;
   }
-  
-  
+
+
   template <typename T>
   inline T const& max(T const& a, T const& b)
   {
     return a > b ? a : b;
   }
-  
-  
+
+
   template <typename T, typename Compare>
   inline T const& max(T const& a, T const& b, Compare comp)
   {
     return comp(a, b) ? a : b;
   }
-  
-  
+
+
   template <typename InputIterator, typename OutputIterator>
   OutputIterator copy(InputIterator first, InputIterator last, OutputIterator result)
   {
@@ -77,8 +77,8 @@ namespace fdv
       *result++ = *first++;
     return result;
   }
-  
-  
+
+
   template <typename InputIterator, typename OutputIterator>
   OutputIterator* copy(InputIterator* first, InputIterator* last, OutputIterator* result)
   {
@@ -87,19 +87,19 @@ namespace fdv
       memcpy(result, first, len*sizeof(InputIterator));
     return result + len;
   }
-  
-  
+
+
   template<typename BidirectionalIterator1, typename BidirectionalIterator2>
   BidirectionalIterator2 copy_backward(BidirectionalIterator1 first,
-                                       BidirectionalIterator1 last,
-                                       BidirectionalIterator2 result)
+    BidirectionalIterator1 last,
+    BidirectionalIterator2 result)
   {
     while (last!=first)
       *(--result) = *(--last);
     return result;
   }
-  
-  
+
+
   template <typename T>
   void swap(T& a, T& b)
   {
@@ -107,24 +107,24 @@ namespace fdv
     a = b;
     b = tmp;
   }
-  
-  
+
+
   template <typename ForwardIterator, typename T>
   void fill(ForwardIterator first, ForwardIterator last, T const& value)
   {
     while (first != last)
       *first++ = value;
   }
-  
-  
+
+
   template <typename OutputIterator, typename Size, typename T>
   void fill_n(OutputIterator first, Size n, T const& value)
   {
     for (; n>0; --n)
       *first++ = value;
   }
-  
-  
+
+
   template <typename InputIterator1, typename InputIterator2>
   bool equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
   {
@@ -133,8 +133,8 @@ namespace fdv
         return false;
     return true;
   }
-  
-  
+
+
   template <typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
   bool equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, BinaryPredicate pred)
   {  
@@ -143,8 +143,8 @@ namespace fdv
         return false;
     return true;
   }
-  
-  
+
+
   template <typename InputIterator1, typename InputIterator2>
   bool lexicographical_compare(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2)
   {
@@ -158,8 +158,8 @@ namespace fdv
     }
     return first2 != last2;
   }
-  
-  
+
+
   template <typename InputIterator1, typename InputIterator2, typename Compare>
   bool lexicographical_compare(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, Compare comp)
   {
@@ -173,8 +173,8 @@ namespace fdv
     }
     return first2 != last2;
   }
-  
-  
+
+
   template<typename InputIterator, typename Function>
   Function for_each(InputIterator first, InputIterator last, Function f)
   {
@@ -182,8 +182,8 @@ namespace fdv
       f(*first++);
     return f;
   }
-  
-  
+
+
   template<typename InputIterator, typename T>
   InputIterator find(InputIterator first, InputIterator last, T const& value)
   {
@@ -193,7 +193,7 @@ namespace fdv
     return first;
   }
 
-  
+
   template<typename InputIterator, typename T, typename Predicate>
   InputIterator find(InputIterator first, InputIterator last, T const& value, Predicate pred)
   {
@@ -202,8 +202,8 @@ namespace fdv
         break;
     return first;
   }
-  
-  
+
+
   template<typename InputIterator, typename Predicate>
   InputIterator find_if(InputIterator first, InputIterator last, Predicate pred)
   {
@@ -212,15 +212,15 @@ namespace fdv
         break;
     return first;
   }
-  
-  
+
+
   template<typename ForwardIterator1, typename ForwardIterator2>
   ForwardIterator1 find_end(ForwardIterator1 first1, ForwardIterator1 last1, ForwardIterator2 first2, ForwardIterator2 last2)
   {
     ForwardIterator1 limit = first1;
     advance(limit, 1 + distance(first1, last1) - distance(first2, last2));
     ForwardIterator1 ret = last1;
-    
+
     while (first1 != limit)
     {
       ForwardIterator1 it1 = first1;
@@ -239,7 +239,7 @@ namespace fdv
     }
     return ret;
   }
-  
+
 
   template<typename ForwardIterator1, typename ForwardIterator2, typename Predicate>
   ForwardIterator1 find_end(ForwardIterator1 first1, ForwardIterator1 last1, ForwardIterator2 first2, ForwardIterator2 last2, Predicate pred)
@@ -247,7 +247,7 @@ namespace fdv
     ForwardIterator1 limit = first1;
     advance(limit, 1 + distance(first1, last1) - distance(first2, last2));
     ForwardIterator1 ret = last1;
-    
+
     while (first1 != limit)
     {
       ForwardIterator1 it1 = first1;
@@ -266,7 +266,7 @@ namespace fdv
     }
     return ret;
   }
-  
+
 
   template <typename ForwardIterator1, typename ForwardIterator2>
   ForwardIterator1 find_first_of(ForwardIterator1 first1, ForwardIterator1 last1, ForwardIterator2 first2, ForwardIterator2 last2)
@@ -278,7 +278,7 @@ namespace fdv
     return last1;
   }
 
-  
+
   template <typename ForwardIterator1, typename ForwardIterator2, typename Compare>
   ForwardIterator1 find_first_of(ForwardIterator1 first1, ForwardIterator1 last1, ForwardIterator2 first2, ForwardIterator2 last2, Compare comp)
   {
@@ -288,8 +288,8 @@ namespace fdv
           return first1;
     return last1;
   }
-  
-  
+
+
   template <typename ForwardIterator>
   ForwardIterator adjacent_find(ForwardIterator first, ForwardIterator last)
   {
@@ -302,7 +302,7 @@ namespace fdv
     return last;
   }
 
-  
+
   template <typename ForwardIterator, typename Predicate>
   ForwardIterator adjacent_find(ForwardIterator first, ForwardIterator last, Predicate pred)
   {
@@ -314,8 +314,8 @@ namespace fdv
           return first;
     return last;
   }
-  
-  
+
+
   template <typename InputIterator, typename T>
   size_t count(InputIterator first, InputIterator last, T const& value)
   {
@@ -325,8 +325,8 @@ namespace fdv
         ++ret;
     return ret;
   }
-  
-  
+
+
   template <typename InputIterator, typename Predicate>
   size_t count_if(InputIterator first, InputIterator last, Predicate pred)
   {
@@ -336,8 +336,8 @@ namespace fdv
         ++ret;
     return ret;
   }
-  
-  
+
+
   template <typename InputIterator1, typename InputIterator2>
   pair<InputIterator1, InputIterator2> mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
   {
@@ -351,7 +351,7 @@ namespace fdv
     return make_pair(first1, first2);
   }
 
-  
+
   template <typename InputIterator1, typename InputIterator2, typename Predicate>
   pair<InputIterator1, InputIterator2> mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, Predicate pred)
   {
@@ -364,14 +364,14 @@ namespace fdv
     }
     return make_pair(first1, first2);
   }
-  
-  
+
+
   template <typename ForwardIterator1, typename ForwardIterator2>
   ForwardIterator1 search(ForwardIterator1 first1, ForwardIterator1 last1, ForwardIterator2 first2, ForwardIterator2 last2)
   {
     ForwardIterator1 limit = first1; 
     advance(limit, 1 + distance(first1, last1) - distance(first2, last2));
-    
+
     while (first1 != limit)
     {
       ForwardIterator1 it1 = first1; 
@@ -387,14 +387,14 @@ namespace fdv
     }
     return last1;
   }
-  
+
 
   template <typename ForwardIterator1, typename ForwardIterator2, typename Predicate>
   ForwardIterator1 search(ForwardIterator1 first1, ForwardIterator1 last1, ForwardIterator2 first2, ForwardIterator2 last2, Predicate pred)
   {
     ForwardIterator1 limit = first1; 
     advance(limit, 1 + distance(first1, last1) - distance(first2, last2));
-    
+
     while (first1 != limit)
     {
       ForwardIterator1 it1 = first1; 
@@ -410,14 +410,14 @@ namespace fdv
     }
     return last1;
   }
-  
-  
+
+
   template <typename ForwardIterator, typename Size, typename T>
   ForwardIterator search_n(ForwardIterator first, ForwardIterator last, Size count, T const& value )
   {
     ForwardIterator limit = first; 
     advance(limit, distance(first, last) - count);
-    
+
     while (first != limit)
     {
       ForwardIterator it = first; 
@@ -432,14 +432,14 @@ namespace fdv
     }
     return last;
   }
-  
+
 
   template <typename ForwardIterator, typename Size, typename T, typename Predicate>
   ForwardIterator search_n(ForwardIterator first, ForwardIterator last, Size count, T const& value, Predicate pred)
   {
     ForwardIterator limit = first; 
     advance(limit, distance(first, last) - count);
-    
+
     while (first != limit)
     {
       ForwardIterator it = first; 
@@ -454,8 +454,8 @@ namespace fdv
     }
     return last;
   }
-  
-  
+
+
   template <typename ForwardIterator1, typename ForwardIterator2>
   ForwardIterator2 swap_ranges(ForwardIterator1 first1, ForwardIterator1 last1, ForwardIterator2 first2)
   {
@@ -463,15 +463,15 @@ namespace fdv
       swap(*first1++, *first2++);
     return first2;
   }
-  
-  
+
+
   template <typename ForwardIterator1, typename ForwardIterator2>
   void iter_swap(ForwardIterator1 a, ForwardIterator2 b)
   {
     swap(*a, *b);
   }
-  
-  
+
+
   template <typename InputIterator, typename OutputIterator, typename UnaryOperator>
   OutputIterator transform(InputIterator first1, InputIterator last1, OutputIterator result, UnaryOperator op)
   {
@@ -480,7 +480,7 @@ namespace fdv
     return result;
   }
 
-  
+
   template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename BinaryOperator>
   OutputIterator transform(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputIterator result, BinaryOperator binary_op)
   {
@@ -488,8 +488,8 @@ namespace fdv
       *result++ = binary_op(*first1++, *first2++);
     return result;
   }
-  
-  
+
+
   template <typename ForwardIterator, typename T>
   void replace(ForwardIterator first, ForwardIterator last, T const& old_value, T const& new_value )
   {
@@ -497,8 +497,8 @@ namespace fdv
       if (*first == old_value) 
         *first = new_value;
   }
-  
-  
+
+
   template <typename ForwardIterator, typename Predicate, typename T>
   void replace_if(ForwardIterator first, ForwardIterator last, Predicate pred, T const& new_value)
   {
@@ -506,8 +506,8 @@ namespace fdv
       if (pred(*first)) 
         *first = new_value;
   }
-  
-  
+
+
   template <typename InputIterator, typename OutputIterator, typename T>
   OutputIterator replace_copy(InputIterator first, InputIterator last, OutputIterator result, T const& old_value, T const& new_value)
   {
@@ -515,8 +515,8 @@ namespace fdv
       *result = (*first == old_value) ? new_value : *first;
     return result;
   }
-  
-  
+
+
   template <typename InputIterator, typename OutputIterator, typename Predicate, typename T>
   OutputIterator replace_copy_if(InputIterator first, InputIterator last, OutputIterator result, Predicate pred, T const& new_value)
   {
@@ -524,24 +524,24 @@ namespace fdv
       *result = (pred(*first)) ? new_value : *first;
     return result;
   }
-  
-  
+
+
   template <typename ForwardIterator, typename Generator>
   void generate(ForwardIterator first, ForwardIterator last, Generator gen)
   {
     while (first != last)  
       *first++ = gen();
   }
-  
-  
+
+
   template <typename OutputIterator, typename Size, typename Generator>
   void generate(OutputIterator first, Size n, Generator gen)
   {
     for (; n>0; --n)  
       *first++ = gen();
   }
-  
-  
+
+
   template <typename ForwardIterator, typename T>
   ForwardIterator remove(ForwardIterator first, ForwardIterator last, T const& value)
   {
@@ -551,8 +551,8 @@ namespace fdv
         *result++ = *first;
     return result;
   }
-  
-  
+
+
   template <typename ForwardIterator, typename Predicate>
   ForwardIterator remove_if(ForwardIterator first, ForwardIterator last, Predicate pred)
   {
@@ -562,8 +562,8 @@ namespace fdv
         *result++ = *first;
     return result;
   }
-  
-  
+
+
   template <typename InputIterator, typename OutputIterator, typename T>
   OutputIterator remove_copy(InputIterator first, InputIterator last, OutputIterator result, T const& value)
   {
@@ -572,8 +572,8 @@ namespace fdv
         *result++ = *first;
     return result;
   }
-  
-  
+
+
   template <typename InputIterator, typename OutputIterator, typename Predicate>
   OutputIterator remove_copy_if(InputIterator first, InputIterator last, OutputIterator result, Predicate pred)
   {
@@ -582,8 +582,8 @@ namespace fdv
         *result++ = *first;
     return result;
   }
-  
-  
+
+
   template <typename ForwardIterator>
   ForwardIterator unique(ForwardIterator first, ForwardIterator last)
   {
@@ -596,7 +596,7 @@ namespace fdv
     return ++result;
   }
 
-  
+
   template <typename ForwardIterator, typename Predicate>
   ForwardIterator unique(ForwardIterator first, ForwardIterator last, Predicate pred)
   {
@@ -608,8 +608,8 @@ namespace fdv
     }
     return ++result;
   }
-  
-  
+
+
   template <typename InputIterator, typename OutputIterator>
   OutputIterator unique_copy(InputIterator first, InputIterator last, OutputIterator result)
   {
@@ -622,7 +622,7 @@ namespace fdv
     return ++result;
   }
 
-  
+
   template <typename InputIterator, typename OutputIterator, typename Predicate>
   OutputIterator unique_copy(InputIterator first, InputIterator last, OutputIterator result, Predicate pred)
   {
@@ -634,16 +634,16 @@ namespace fdv
     }
     return ++result;
   }
-  
-  
+
+
   template <typename BidirectionalIterator>
   void reverse(BidirectionalIterator first, BidirectionalIterator last)
   {
     while ((first != last) && (first != --last))
       swap(*first++, *last);
   }
-  
-  
+
+
   template <typename BidirectionalIterator, typename OutputIterator>
   OutputIterator reverse_copy(BidirectionalIterator first, BidirectionalIterator last, OutputIterator result)
   {
@@ -651,8 +651,8 @@ namespace fdv
       *result++ = *--last;
     return result;
   }
-  
-  
+
+
   template <typename ForwardIterator>
   void rotate(ForwardIterator first, ForwardIterator middle, ForwardIterator last)
   {
@@ -666,16 +666,16 @@ namespace fdv
         middle = next;
     }
   }
-  
-  
+
+
   template <typename ForwardIterator, typename OutputIterator>
   OutputIterator rotate_copy(ForwardIterator first, ForwardIterator middle, ForwardIterator last, OutputIterator result)
   {
     result = copy(middle, last, result);
     return copy(first, middle, result);
   }
-  
-  
+
+
   template <typename RandomAccessIterator, typename RandomNumberGenerator>
   void random_shuffle(RandomAccessIterator first, RandomAccessIterator last, RandomNumberGenerator& rand)
   {
@@ -684,27 +684,27 @@ namespace fdv
     for (i=2; i<n; ++i)
       swap(first[i], first[rand(i)]);
   }
-  
+
   /*
   template <typename RandomAccessIterator>
   void random_shuffle(RandomAccessIterator first, RandomAccessIterator last)
   {
-    
-    static struct Randomizer
-    {
-      Randomizer()
-      {
-        srandom(micros());
-      }
-    } randomizer;
-    
-    size_t i, n;
-    n = (last-first);
-    for (i=2; i<n; ++i)
-      swap(first[i], first[ random() % i ]);
+
+  static struct Randomizer
+  {
+  Randomizer()
+  {
+  srandom(micros());
+  }
+  } randomizer;
+
+  size_t i, n;
+  n = (last-first);
+  for (i=2; i<n; ++i)
+  swap(first[i], first[ random() % i ]);
   }*/
-  
-  
+
+
   template <typename BidirectionalIterator, typename Predicate>
   BidirectionalIterator partition(BidirectionalIterator first, BidirectionalIterator last, Predicate pred)
   {
@@ -722,8 +722,8 @@ namespace fdv
     }
     return first;
   }
-  
-  
+
+
   template <typename ForwardIterator, typename T>
   ForwardIterator lower_bound(ForwardIterator first, ForwardIterator last, T const& value)
   {
@@ -744,7 +744,7 @@ namespace fdv
     return first;
   }
 
-  
+
   template <typename ForwardIterator, typename T, typename Compare>
   ForwardIterator lower_bound(ForwardIterator first, ForwardIterator last, T const& value, Compare comp)
   {
@@ -764,8 +764,8 @@ namespace fdv
     }
     return first;
   }
-  
-  
+
+
   template <typename ForwardIterator, typename T>
   ForwardIterator upper_bound(ForwardIterator first, ForwardIterator last, T const& value)
   {
@@ -785,7 +785,7 @@ namespace fdv
     }
     return first;
   }
-  
+
 
   template <typename ForwardIterator, typename T, typename Compare>
   ForwardIterator upper_bound(ForwardIterator first, ForwardIterator last, T const& value, Compare comp)
@@ -806,8 +806,8 @@ namespace fdv
     }
     return first;
   }
-  
-  
+
+
   template <typename ForwardIterator, typename T>
   pair<ForwardIterator, ForwardIterator> equal_range(ForwardIterator first, ForwardIterator last, T const& value)
   {
@@ -815,15 +815,15 @@ namespace fdv
     return make_pair(it, upper_bound(it, last, value));
   }
 
-  
+
   template <typename ForwardIterator, typename T, typename Compare>
   pair<ForwardIterator, ForwardIterator> equal_range(ForwardIterator first, ForwardIterator last, T const& value, Compare comp)
   {
     ForwardIterator it = lower_bound(first, last, value, comp);
     return make_pair(it, upper_bound(it, last, value, comp));
   }
-  
-  
+
+
   template <typename ForwardIterator, typename T>
   bool binary_search(ForwardIterator first, ForwardIterator last, T const& value)
   {
@@ -831,15 +831,15 @@ namespace fdv
     return first != last && !(value < *first);
   }
 
-  
+
   template <typename ForwardIterator, typename T, typename Compare>
   bool binary_search(ForwardIterator first, ForwardIterator last, T const& value, Compare comp)
   {
     first = lower_bound(first, last, value, comp);
     return first != last && !comp(value, *first);
   }
-  
-  
+
+
   template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
   OutputIterator merge(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, OutputIterator result)
   {
@@ -853,7 +853,7 @@ namespace fdv
     }
   }
 
-  
+
   template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Compare>
   OutputIterator merge(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, OutputIterator result, Compare comp)
   {
@@ -866,8 +866,8 @@ namespace fdv
         copy(first1, last1, result);
     }
   }
-  
-  
+
+
   template <typename InputIterator1, typename InputIterator2>
   bool includes(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2)
   {
@@ -888,7 +888,7 @@ namespace fdv
     return false;
   }
 
-  
+
   template <typename InputIterator1, typename InputIterator2, typename Compare>
   bool includes(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, Compare comp)
   {
@@ -908,8 +908,8 @@ namespace fdv
     }
     return false;
   }
-  
-  
+
+
   template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
   OutputIterator set_union(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, OutputIterator result)
   {
@@ -930,7 +930,7 @@ namespace fdv
         return copy(first1, last1, result);
     }
   }
-  
+
 
   template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Compare>
   OutputIterator set_union(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, OutputIterator result, Compare comp)
@@ -952,8 +952,8 @@ namespace fdv
         return copy(first1, last1, result);
     }
   }
-  
-  
+
+
   template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
   OutputIterator set_intersection(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, OutputIterator result)
   {
@@ -971,7 +971,7 @@ namespace fdv
     }
     return result;
   }
-  
+
 
   template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Compare>
   OutputIterator set_intersection(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, OutputIterator result, Compare comp)
@@ -990,8 +990,8 @@ namespace fdv
     }
     return result;
   }
-  
-  
+
+
   template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
   OutputIterator set_difference(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, OutputIterator result)
   {
@@ -1009,8 +1009,8 @@ namespace fdv
     }
     return copy(first1, last1, result);
   }
-  
-  
+
+
   template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Compare>
   OutputIterator set_difference(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, OutputIterator result, Compare comp)
   {
@@ -1029,7 +1029,7 @@ namespace fdv
     return copy(first1, last1, result);
   }
 
-  
+
   template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
   OutputIterator set_symmetric_difference(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, OutputIterator result)
   {
@@ -1050,7 +1050,7 @@ namespace fdv
         return copy(first1, last1, result);
     }
   }
-  
+
 
   template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Compare>
   OutputIterator set_symmetric_difference(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, OutputIterator result, Compare comp)
@@ -1072,8 +1072,8 @@ namespace fdv
         return copy(first1, last1, result);
     }
   }
-  
-  
+
+
   template <typename ForwardIterator>
   ForwardIterator min_element(ForwardIterator first, ForwardIterator last)
   {
@@ -1085,7 +1085,7 @@ namespace fdv
         lowest = first;
     return lowest;
   }
-  
+
 
   template <typename ForwardIterator, typename Compare>
   ForwardIterator min_element(ForwardIterator first, ForwardIterator last, Compare comp)
@@ -1098,8 +1098,8 @@ namespace fdv
         lowest = first;
     return lowest;
   }
-  
-  
+
+
   template <typename ForwardIterator>
   ForwardIterator max_element(ForwardIterator first, ForwardIterator last)
   {
@@ -1112,7 +1112,7 @@ namespace fdv
     return largest;
   }
 
-  
+
   template <typename ForwardIterator, typename Compare>
   ForwardIterator max_element(ForwardIterator first, ForwardIterator last, Compare comp)
   {
@@ -1124,11 +1124,11 @@ namespace fdv
         largest = first;
     return largest;
   }
-  
-  
-  
-  
-  
+
+
+
+
+
 }  // end of namspace fdv
 
 #endif // FDV_ALGORITHM_H

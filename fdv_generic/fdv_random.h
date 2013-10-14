@@ -2,7 +2,7 @@
 # Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
 # Copyright (c) 2013 Fabrizio Di Vittorio.
 # All rights reserved.
- 
+
 # GNU GPL LICENSE
 #
 # This module is free software; you can redistribute it and/or
@@ -34,7 +34,7 @@
 
 namespace fdv
 {
-  
+
   /////////////////////////////////////////////////////////////////////////////////
   // Random
 
@@ -56,7 +56,7 @@ namespace fdv
       init(true);
       srandom(seed + 1);
     }
-    
+
     // 0...RANDOM_MAX
     static uint32_t nextUInt32()
     {      
@@ -64,13 +64,13 @@ namespace fdv
         reseed(millis());      
       return random();
     }
-    
+
     // in 16 bit range
     static uint16_t nextUInt16(uint16_t minVal, uint16_t maxVal)
     {
       return nextUInt32() % (maxVal - minVal + 1) + minVal;
     }
-    
+
     static uint16_t nextUInt16()
     {
       return nextUInt32() % 65536;      
@@ -78,9 +78,9 @@ namespace fdv
 
 
   };
-  
-  
-  
+
+
+
 } // end of fdv namespace
 
 

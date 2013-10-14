@@ -2,7 +2,7 @@
 # Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
 # Copyright (c) 2013 Fabrizio Di Vittorio.
 # All rights reserved.
- 
+
 # GNU GPL LICENSE
 #
 # This module is free software; you can redistribute it and/or
@@ -69,7 +69,7 @@ namespace fdv
     static uint8_t const BIT5  = 0x20;
     static uint8_t const BIT6  = 0x40;
     static uint8_t const BIT7  = 0x80;
-    
+
     static uint16_t const BIT8  = 0x0100;
     static uint16_t const BIT9  = 0x0200;
     static uint16_t const BIT10 = 0x0400;
@@ -431,7 +431,7 @@ namespace fdv
     static uint16_t const SHIFT_LFRQ = BIT2;
     //   STRCH: LED Pulse Stretching Enable bit
     static uint16_t const BIT_STRCH = BIT1;
-    
+
 
 
 
@@ -575,17 +575,17 @@ namespace fdv
         _delay_us(150);
         CMD_systemReset();
         delay_ms(50);  // fix errata silicon 2 (rev. B7)
-        
+
         // setup RX buffer Start and End
         setReg(ERXSTL, RXBUFFERSTART & 0xFF);
         setReg(ERXSTH, (RXBUFFERSTART >> 8) & 0xFF);
         setReg(ERXNDL, RXBUFFEREND & 0xFF);
         setReg(ERXNDH, (RXBUFFEREND >> 8) & 0xFF);
-        
+
         // setup RX start reading pointer
         setReg(ERXRDPTL, RXBUFFERSTART & 0xFF);
         setReg(ERXRDPTH, (RXBUFFERSTART >> 8) & 0xFF);
-        
+
         // setup receive filters
         //   - if unicast
         //   - OR multicast
@@ -596,7 +596,7 @@ namespace fdv
         // wait for clock is ready
         while ((getReg(ESTAT) & BIT_CLKRDY) == 0)
           delay_ms(1);
-          
+
         // set MAC address (init step 9)
         setReg(MAADR1, m_address[0]);
         setReg(MAADR2, m_address[1]);
@@ -608,7 +608,7 @@ namespace fdv
         // verify MAC address
         if (getReg(MAADR1) != m_address[0] || getReg(MAADR2) != m_address[1] || getReg(MAADR3) != m_address[2] || getReg(MAADR4) != m_address[3] || getReg(MAADR5) != m_address[4] || getReg(MAADR6) != m_address[5])
           return; // FAIL!!
-        
+
         // setup MACON1 register (init step 1)
         //   - enable MAC to receive frames
         //   - TXPAUS and RXPAUS needed by fullduplex
@@ -689,13 +689,13 @@ namespace fdv
       return getReg_noIRQ(EREVID);
     }
 
-    
+
     void addListener(ILinkLayerListener* listener)
     {
       m_listeners.push_back(listener);
     }
 
-    
+
   private:
 
     void extInterrupt()
@@ -706,7 +706,7 @@ namespace fdv
 
       if (!m_available)
         return;
-      
+
       // disable interrupts
       bitFieldClear(EIE, BIT_INTIE);
 
@@ -731,12 +731,12 @@ namespace fdv
           // clear flag
           bitFieldClear(EIR, BIT_TXIF);
         }/*
-        else if (eir & BIT_LINKIF)
-        {
-          // link change
-          getPHYReg(PHIR);  // reading PHIR will clear PLINKIF
-          m_linkUp = getPHYReg(PHSTAT2) & BIT_LSTAT;
-        }*/
+         else if (eir & BIT_LINKIF)
+         {
+         // link change
+         getPHYReg(PHIR);  // reading PHIR will clear PLINKIF
+         m_linkUp = getPHYReg(PHSTAT2) & BIT_LSTAT;
+         }*/
         else
           break;
       }
@@ -811,12 +811,12 @@ namespace fdv
     {
       if (m_frameReceived == 0)
         return false;
-      
+
       ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
       {
         uint16_t RXPtr = m_nextRXPacketPtr;
         beginReadMemory(m_nextRXPacketPtr);
-        
+
         // read next packet pointer
         uint8_t lo = readByte();
         uint8_t hi = readByte();
@@ -846,7 +846,7 @@ namespace fdv
         // store data position and length
         frame->dataPos = RXPtr + 20;
         frame->dataLength = byteCount - 6 - 6 - 2 - 4; // decrement by dst_addr, src_addr, type/length, CRC32
-        
+
         endReadMemory();
 
         --m_frameReceived;
@@ -888,8 +888,8 @@ namespace fdv
 
 
   private:
-    
-    
+
+
     // native SPI command: RCR
     uint8_t CMD_readControlRegister(uint8_t reg)
     {
@@ -1037,8 +1037,8 @@ namespace fdv
       // set register
       CMD_writeControlRegister(rr, value);
     }
-    
-    
+
+
     void setReg_noIRQ(uint8_t reg, uint8_t value)
     {
       ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
@@ -1046,8 +1046,8 @@ namespace fdv
         setReg(reg, value);
       }
     }
-    
-    
+
+
     // 7 6 5 4 3 2 1 0
     // * * * = bank (0..3)
     //       * * * * * = register
@@ -1062,8 +1062,8 @@ namespace fdv
       // set register
       return CMD_readControlRegister(rr);
     }
-    
-    
+
+
     uint8_t getReg_noIRQ(uint8_t reg)
     {
       ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
@@ -1083,8 +1083,8 @@ namespace fdv
       bitFieldClear(MICMD, BIT_MIIRD);
       return getReg(MIRDL) | ((uint16_t)getReg(MIRDH) << 8);
     }
-    
-    
+
+
     uint16_t getPHYReg_noIRQ(uint8_t reg)
     {
       ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
@@ -1127,7 +1127,7 @@ namespace fdv
       CMD_bitFieldClear(rr, value);
     }
 
-    
+
   private:
 
     // configuration
@@ -1137,7 +1137,7 @@ namespace fdv
     LinkAddress        m_address;    // the MAC address
     Mode               m_mode;
     Array<ILinkLayerListener*, MAXLISTENERS> m_listeners; // upper layer listeners
-    
+
     // status
     uint8_t volatile   m_frameReceived; // number of frames ready
     bool volatile      m_frameSent;
@@ -1146,7 +1146,7 @@ namespace fdv
 
   };
 
-  
+
 
 } // namespace fdv
 
