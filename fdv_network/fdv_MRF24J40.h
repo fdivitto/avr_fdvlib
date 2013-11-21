@@ -21,6 +21,12 @@
 */
 
 
+/* todo:
+- verificare quanta memoria ancora rimane
+- lista di moduli a cui un modulo può raggiungere direttamente e quindi fare il flood o inviare pacchetti direttamente (senza broadcast)
+
+*/
+
 
 
 // note: this driver may be vulnerable to replay attack. Replay attack defense must be implemented at the upper layer.
