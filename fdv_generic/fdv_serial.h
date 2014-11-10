@@ -116,6 +116,12 @@ namespace fdv
       uint8_t head;
       uint8_t tail;
 
+			RingBuffer()
+				: head(0),
+          tail(0)
+			{
+			}
+
       void put(uint8_t c)
       {
         uint8_t i = (head + 1) % RX_BUFFER_SIZE;
@@ -132,14 +138,17 @@ namespace fdv
 
     explicit HardwareSerial(BPS bps)
     {
-      s_buffer = &m_RXBuffer;    
+			ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+			{
+				s_buffer = &m_RXBuffer;    
 
-      *SERIAL_CONF[SerialIndexV][UCSRnA] = 0;
-      uint16_t const baud_setting = pgm_read_word(&BPS_TO_UBR[bps]);
-      *SERIAL_CONF[SerialIndexV][UBRnH] = baud_setting >> 8;
-      *SERIAL_CONF[SerialIndexV][UBRnL] = baud_setting & 0xFF;
+				*SERIAL_CONF[SerialIndexV][UCSRnA] = 0;
+				uint16_t const baud_setting = pgm_read_word(&BPS_TO_UBR[bps]);
+				*SERIAL_CONF[SerialIndexV][UBRnH] = baud_setting >> 8;
+				*SERIAL_CONF[SerialIndexV][UBRnL] = baud_setting & 0xFF;
 
-      *SERIAL_CONF[SerialIndexV][UCSRnB] |= _BV(SERIAL_BITS[SerialIndexV][RXENn]) | _BV(SERIAL_BITS[SerialIndexV][TXENn]) | _BV(SERIAL_BITS[SerialIndexV][RXCIEn]);
+				*SERIAL_CONF[SerialIndexV][UCSRnB] |= _BV(SERIAL_BITS[SerialIndexV][RXENn]) | _BV(SERIAL_BITS[SerialIndexV][TXENn]) | _BV(SERIAL_BITS[SerialIndexV][RXCIEn]);
+			}
     }
 
 
@@ -189,7 +198,7 @@ namespace fdv
 
     uint8_t readChar()
     {
-      uint8_t c;
+      uint8_t c = 0;	// avoid unused warning
       read(&c, 1);
       return c;
     }
@@ -209,6 +218,12 @@ namespace fdv
         *SERIAL_CONF[SerialIndexV][UDRn] = *buffer++;
       }
     }
+	
+	
+		void writeChar(uint8_t c)
+		{
+			write(&c, 1);
+		}
 
 
     void write(char const* str)
@@ -408,8 +423,9 @@ namespace fdv
   }
 
 
-
-#define cout serial
+#ifndef cout
+#  define cout serial
+#endif
 
 
 }

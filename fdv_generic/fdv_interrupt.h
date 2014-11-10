@@ -78,10 +78,11 @@ namespace fdv
       PCEXTINT_INT20    = 20,
       PCEXTINT_INT21    = 21,
       PCEXTINT_INT22    = 22,
-      PCEXTINT_INT23    = 23
+      PCEXTINT_INT23    = 23,
 #else
 #error unknown MCU
 #endif
+	  PCEXTINT_NONE = 0xFF
     };
 
     // grouped for s_callableObjects (actually atmel groups pcint in three groups and we cannot distinguish single pins ints)

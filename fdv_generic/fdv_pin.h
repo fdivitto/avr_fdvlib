@@ -41,12 +41,13 @@ namespace fdv
 
   struct Pin
   {
-    volatile uint8_t*    DDR_ADDR;
-    volatile uint8_t*    IN_ADDR;
-    volatile uint8_t*    OUT_ADDR;
-    uint8_t              BIT_MSK;
-    ExtInterrupt::ExtInt EXT_INT;
-    uint8_t              ADC_PIN;
+    volatile uint8_t*      DDR_ADDR;
+    volatile uint8_t*      IN_ADDR;
+    volatile uint8_t*      OUT_ADDR;
+    uint8_t                BIT_MSK;
+    ExtInterrupt::ExtInt   EXT_INT;
+	PCExtInterrupt::ExtInt PCEXT_INT;
+    uint8_t                ADC_PIN;
 
     void modeOutput() const
     {
@@ -88,14 +89,14 @@ namespace fdv
 
   // PORT-B
 
-  Pin const PinB0 = {&DDRB, &PINB, &PORTB, _BV(PB0)};  // Arduino D-8
-  Pin const PinB1 = {&DDRB, &PINB, &PORTB, _BV(PB1)};  // Arduino D-9
-  Pin const PinB2 = {&DDRB, &PINB, &PORTB, _BV(PB2)};  // Arduino D-10 (SPI_SS)
-  Pin const PinB3 = {&DDRB, &PINB, &PORTB, _BV(PB3)};  // Arduino D-11 (SPI_MOSI)
-  Pin const PinB4 = {&DDRB, &PINB, &PORTB, _BV(PB4)};  // Arduino D-12 (SPI_MISO)
-  Pin const PinB5 = {&DDRB, &PINB, &PORTB, _BV(PB5)};  // Arduino D-13 (led) (SPI_SCK)
-  Pin const PinB6 = {&DDRB, &PINB, &PORTB, _BV(PB6)};  // Arduino (XTAL1)
-  Pin const PinB7 = {&DDRB, &PINB, &PORTB, _BV(PB7)};  // Arduino (XTAL2)
+  Pin const PinB0 = {&DDRB, &PINB, &PORTB, _BV(PB0), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT0};  // Arduino D-8 (PCINT0)
+  Pin const PinB1 = {&DDRB, &PINB, &PORTB, _BV(PB1), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT1};  // Arduino D-9 (PCINT1)
+  Pin const PinB2 = {&DDRB, &PINB, &PORTB, _BV(PB2), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT2};  // Arduino D-10 (SPI_SS) (PCINT2)
+  Pin const PinB3 = {&DDRB, &PINB, &PORTB, _BV(PB3), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT3};  // Arduino D-11 (SPI_MOSI) (PCINT3)
+  Pin const PinB4 = {&DDRB, &PINB, &PORTB, _BV(PB4), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT4};  // Arduino D-12 (SPI_MISO) (PCINT4)
+  Pin const PinB5 = {&DDRB, &PINB, &PORTB, _BV(PB5), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT5};  // Arduino D-13 (led) (SPI_SCK) (PCINT5)
+  Pin const PinB6 = {&DDRB, &PINB, &PORTB, _BV(PB6), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT6};  // Arduino (XTAL1) (PCINT6)
+  Pin const PinB7 = {&DDRB, &PINB, &PORTB, _BV(PB7), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT7};  // Arduino (XTAL2) (PCINT7)
 
 
 #define PinSPI_SS   PinB2
@@ -107,24 +108,24 @@ namespace fdv
 
   // PORT-C
 
-  Pin const PinC0 = {&DDRC, &PINC, &PORTC, _BV(PC0), ExtInterrupt::EXTINT_NONE, 0};  // Arduino A-0 (ADC0)
-  Pin const PinC1 = {&DDRC, &PINC, &PORTC, _BV(PC1), ExtInterrupt::EXTINT_NONE, 1};  // Arduino A-1 (ADC1)
-  Pin const PinC2 = {&DDRC, &PINC, &PORTC, _BV(PC2), ExtInterrupt::EXTINT_NONE, 2};  // Arduino A-2 (ADC2)
-  Pin const PinC3 = {&DDRC, &PINC, &PORTC, _BV(PC3), ExtInterrupt::EXTINT_NONE, 3};  // Arduino A-3 (ADC3)
-  Pin const PinC4 = {&DDRC, &PINC, &PORTC, _BV(PC4), ExtInterrupt::EXTINT_NONE, 4};  // Arduino A-4 (ADC4)(I2C_SDL)
-  Pin const PinC5 = {&DDRC, &PINC, &PORTC, _BV(PC5), ExtInterrupt::EXTINT_NONE, 5};  // Arduino A-5 (ADC5)(I2C_SCL)
-  Pin const PinC6 = {&DDRC, &PINC, &PORTC, _BV(PC6)};                                // Arduino (RESET)
+  Pin const PinC0 = {&DDRC, &PINC, &PORTC, _BV(PC0), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT8, 0};  // Arduino A-0 (ADC0) (PCINT8)
+  Pin const PinC1 = {&DDRC, &PINC, &PORTC, _BV(PC1), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT9, 1};  // Arduino A-1 (ADC1) (PCINT9)
+  Pin const PinC2 = {&DDRC, &PINC, &PORTC, _BV(PC2), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT10, 2}; // Arduino A-2 (ADC2) (PCINT10)
+  Pin const PinC3 = {&DDRC, &PINC, &PORTC, _BV(PC3), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT11, 3}; // Arduino A-3 (ADC3) (PCINT11)
+  Pin const PinC4 = {&DDRC, &PINC, &PORTC, _BV(PC4), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT12, 4}; // Arduino A-4 (ADC4)(I2C_SDL) (PCINT12)
+  Pin const PinC5 = {&DDRC, &PINC, &PORTC, _BV(PC5), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT13, 5}; // Arduino A-5 (ADC5)(I2C_SCL) (PCINT13)
+  Pin const PinC6 = {&DDRC, &PINC, &PORTC, _BV(PC6), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT14};    // Arduino (RESET) (PCINT14)
 
   // PORT-D
 
-  Pin const PinD0 = {&DDRD, &PIND, &PORTD, _BV(PD0)};                                // Arduino D-0 (RXD)
-  Pin const PinD1 = {&DDRD, &PIND, &PORTD, _BV(PD1)};                                // Arduino D-1 (TXD)
-  Pin const PinD2 = {&DDRD, &PIND, &PORTD, _BV(PD2), ExtInterrupt::EXTINT_INT0};     // Arduino D-2 (INT0)
-  Pin const PinD3 = {&DDRD, &PIND, &PORTD, _BV(PD3), ExtInterrupt::EXTINT_INT1};     // Arduino D-3 (INT1)
-  Pin const PinD4 = {&DDRD, &PIND, &PORTD, _BV(PD4)};                                // Arduino D-4
-  Pin const PinD5 = {&DDRD, &PIND, &PORTD, _BV(PD5)};                                // Arduino D-5
-  Pin const PinD6 = {&DDRD, &PIND, &PORTD, _BV(PD6)};                                // Arduino D-6
-  Pin const PinD7 = {&DDRD, &PIND, &PORTD, _BV(PD7)};                                // Arduino D-7
+  Pin const PinD0 = {&DDRD, &PIND, &PORTD, _BV(PD0), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT16}; // Arduino D-0 (RXD) (PCINT16)
+  Pin const PinD1 = {&DDRD, &PIND, &PORTD, _BV(PD1), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT17}; // Arduino D-1 (TXD) (PCINT17)
+  Pin const PinD2 = {&DDRD, &PIND, &PORTD, _BV(PD2), ExtInterrupt::EXTINT_INT0, PCExtInterrupt::PCEXTINT_INT18}; // Arduino D-2 (INT0) (PCINT18)
+  Pin const PinD3 = {&DDRD, &PIND, &PORTD, _BV(PD3), ExtInterrupt::EXTINT_INT1, PCExtInterrupt::PCEXTINT_INT19}; // Arduino D-3 (INT1) (PCINT19)
+  Pin const PinD4 = {&DDRD, &PIND, &PORTD, _BV(PD4), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT20}; // Arduino D-4 (PCINT20)
+  Pin const PinD5 = {&DDRD, &PIND, &PORTD, _BV(PD5), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT21}; // Arduino D-5 (PCINT21)
+  Pin const PinD6 = {&DDRD, &PIND, &PORTD, _BV(PD6), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT22}; // Arduino D-6 (PCINT22)
+  Pin const PinD7 = {&DDRD, &PIND, &PORTD, _BV(PD7), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT23}; // Arduino D-7 (PCINT23)
 
   // Arduino Ethernet/SD shield (v.05)
 

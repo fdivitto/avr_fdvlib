@@ -702,7 +702,7 @@ namespace fdv
     {
 
       uint16_t vvv = m_interruptPin->read();
-      cout << "int " << (uint16_t)getReg(EIR) << " " << vvv << endl;
+      //cout << "int " << (uint16_t)getReg(EIR) << " " << vvv << endl;
 
       if (!m_available)
         return;

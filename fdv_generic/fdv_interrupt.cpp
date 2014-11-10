@@ -1,25 +1,23 @@
 /*
-Part of the Wiring project - http://wiring.uniandes.edu.co
+# Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
+# Copyright (c) 2013 Fabrizio Di Vittorio.
+# All rights reserved.
 
-Copyright (c) 2004-05 Hernando Barragan
-
-This library is free software; you can redistribute it and/or
-modify it under the terms of the GNU Lesser General Public
-License as published by the Free Software Foundation; either
-version 2.1 of the License, or (at your option) any later version.
-
-This library is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Lesser General Public License for more details.
-
-You should have received a copy of the GNU Lesser General
-Public License along with this library; if not, write to the
-Free Software Foundation, Inc., 59 Temple Place, Suite 330,
-Boston, MA  02111-1307  USA
-
-Modified 24 November 2006 by David A. Mellis
-Modified 2010 by Fabrizio Di Vittorio (fdivitto@tiscali.it)
+# GNU GPL LICENSE
+#
+# This module is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; latest version thereof,
+# available at: <http://www.gnu.org/licenses/gpl.txt>.
+#
+# This module is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this module; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA
 */
 
 #include <inttypes.h>
