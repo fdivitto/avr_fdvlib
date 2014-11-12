@@ -49,9 +49,7 @@ namespace fdv
 
 
 #define _SS_MAX_RX_BUFF 64 // RX buffer size
-#ifndef GCC_VERSION
-#define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
-#endif
+
 
 //
 // Lookup table
@@ -143,7 +141,6 @@ const int XMIT_START_ADJUSTMENT = 6;
 
 
 
-
 inline void tunedDelay(uint16_t delay)
 {
 	uint8_t tmp=0;
@@ -158,23 +155,6 @@ inline void tunedDelay(uint16_t delay)
 	);
 }
 
-
-/*
-#define TDELAY(delay) \
-{ \
-	uint8_t tmp=0;    \
-	asm volatile("sbiw    %0, 0x01 \n\t" \
-	"ldi %1, 0xFF \n\t" \
-	"cpi %A0, 0xFF \n\t" \
-	"cpc %B0, %1 \n\t" \
-	"brne .-10 \n\t" \
-  : "+w" (delay), "+a" (tmp)\
-	: "0" (delay) \
-	); \
-}
-*/
-
-#define TDELAY(delay) tunedDelay(delay)
 
 
 
@@ -198,103 +178,52 @@ private:
 	uint16_t _tx_delay;
 
 	bool _buffer_overflow;
-	bool _inverse_logic;
 
 	// private methods
 	
 	//
 	// The receive routine called by the interrupt handler
-	//
+	// Assume interrupts disabled
 	void recv()
 	{
 
-		#if GCC_VERSION < 40302
-		// Work-around for avr-gcc 4.3.0 OSX version bug
-		// Preserve the registers that the compiler misses
-		// (courtesy of Arduino forum user *etracer*)
-		asm volatile(
-		"push r18 \n\t"
-		"push r19 \n\t"
-		"push r20 \n\t"
-		"push r21 \n\t"
-		"push r22 \n\t"
-		"push r23 \n\t"
-		"push r26 \n\t"
-		"push r27 \n\t"
-		::);
-		#endif
-
 		uint8_t d = 0;
 
-		ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+		// If RX line is high, then we don't see any start bit
+		// so interrupt is probably not for us
+		if (_receivePin->read() == 0)
 		{
+			// Wait approximately 1/2 of a bit width to "center" the sample
+			tunedDelay(_rx_delay_centering - 30);
 
-			// If RX line is high, then we don't see any start bit
-			// so interrupt is probably not for us
-			if (_inverse_logic ? _receivePin->read() : !_receivePin->read())
+			// Read each of the 8 bits
+			for (uint8_t i=0x1; i; i <<= 1)
 			{
-				// Wait approximately 1/2 of a bit width to "center" the sample
-				TDELAY(_rx_delay_centering);
+				tunedDelay(_rx_delay_intrabit);
+				uint8_t noti = ~i;
+				if (_receivePin->read())
+					d |= i;
+				else // else clause added to ensure function timing is ~balanced
+					d &= noti;
+			}
 
-				// Read each of the 8 bits
-				for (uint8_t i=0x1; i; i <<= 1)
-				{
-					TDELAY(_rx_delay_intrabit);
-					uint8_t noti = ~i;
-					if (_receivePin->read())
-						d |= i;
-					else // else clause added to ensure function timing is ~balanced
-						d &= noti;
-				}
+			// skip the stop bit
+			tunedDelay(_rx_delay_stopbit);
 
-				// skip the stop bit
-				TDELAY(_rx_delay_stopbit);
-
-				if (_inverse_logic)
-					d = ~d;
-
-				// if buffer full, set the overflow flag and return
-				if ((_receive_buffer_tail + 1) % _SS_MAX_RX_BUFF != _receive_buffer_head)
-				{
-					// save new data in buffer: tail points to where byte goes
-					_receive_buffer[_receive_buffer_tail] = d; // save new byte
-					_receive_buffer_tail = (_receive_buffer_tail + 1) % _SS_MAX_RX_BUFF;
-				}
-				else
-				{
-					_buffer_overflow = true;
-				}
+			// if buffer full, set the overflow flag and return
+			if ((_receive_buffer_tail + 1) % _SS_MAX_RX_BUFF != _receive_buffer_head)
+			{
+				// save new data in buffer: tail points to where byte goes
+				_receive_buffer[_receive_buffer_tail] = d; // save new byte
+				_receive_buffer_tail = (_receive_buffer_tail + 1) % _SS_MAX_RX_BUFF;
+			}
+			else
+			{
+				_buffer_overflow = true;
 			}
 		}
 
-		#if GCC_VERSION < 40302
-		// Work-around for avr-gcc 4.3.0 OSX version bug
-		// Restore the registers that the compiler misses
-		asm volatile(
-		"pop r27 \n\t"
-		"pop r26 \n\t"
-		"pop r23 \n\t"
-		"pop r22 \n\t"
-		"pop r21 \n\t"
-		"pop r20 \n\t"
-		"pop r19 \n\t"
-		"pop r18 \n\t"
-		::);
-		#endif
 	}
-
-	
-	/*uint8_t rx_pin_read()
-	{
-		return _receivePin->read();
-	}*/
-	
-	/*
-	void tx_pin_write(uint8_t pin_state)
-	{
-		_transmitPin->write(pin_state);
-	}
-*/
 
 	
 	void setTX(Pin const* transmitPin)
@@ -309,8 +238,7 @@ private:
 	{
 		_receivePin = receivePin;
 		_receivePin->modeInput();
-		if (!_inverse_logic)
-			_receivePin->writeHigh(); // pullup for normal logic!
+  	_receivePin->writeHigh(); // pullup
 	}
 	
 
@@ -318,15 +246,14 @@ private:
 public:
 	
 	// public methods
-	SoftwareSerial(Pin const* receivePin, Pin const* transmitPin, bool inverse_logic = false) :
+	SoftwareSerial(Pin const* receivePin, Pin const* transmitPin) :
     _receive_buffer_tail(0),
     _receive_buffer_head(0),
 		_rx_delay_centering(0),
 		_rx_delay_intrabit(0),
 		_rx_delay_stopbit(0),
 		_tx_delay(0),
-		_buffer_overflow(false),
-		_inverse_logic(inverse_logic)
+		_buffer_overflow(false)
 	{
 		setTX(transmitPin);
 		setRX(receivePin);
@@ -356,7 +283,7 @@ public:
 			}
 		}
 
-		TDELAY(_tx_delay); // if we were low this establishes the end
+		tunedDelay(_tx_delay); // if we were low this establishes the end
 
 		listen();
 	}
@@ -406,44 +333,23 @@ public:
 		ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
 		{
 			// Write the start bit
-			if (_inverse_logic)
-				_transmitPin->writeHigh();
-			else
-				_transmitPin->writeLow();
-			uint16_t d = _tx_delay + XMIT_START_ADJUSTMENT;
-			TDELAY(d);
+			_transmitPin->writeLow();
+			tunedDelay(_tx_delay + XMIT_START_ADJUSTMENT);
 
 			// Write each of the 8 bits
-			if (_inverse_logic)
+			for (uint8_t mask = 0x01; mask; mask <<= 1)
 			{
-				for (uint8_t mask = 0x01; mask; mask <<= 1)
-				{
-					if (b & mask) // choose bit
-						_transmitPin->writeLow(); // send 1
-					else
-						_transmitPin->writeHigh(); // send 0
+				if (b & mask) // choose bit
+					_transmitPin->writeHigh(); // send 1
+				else
+					_transmitPin->writeLow(); // send 0
 			
-					TDELAY(_tx_delay);
-				}
-
-				_transmitPin->writeLow(); // restore pin to natural state
-			}
-			else
-			{
-				for (uint8_t mask = 0x01; mask; mask <<= 1)
-				{
-					if (b & mask) // choose bit
-						_transmitPin->writeHigh(); // send 1
-					else
-						_transmitPin->writeLow(); // send 0
-			
-					TDELAY(_tx_delay);
-				}
-
-				_transmitPin->writeHigh(); // restore pin to natural state
+				tunedDelay(_tx_delay);
 			}
 
-			TDELAY(_tx_delay);
+			_transmitPin->writeHigh(); // restore pin to natural state
+
+			tunedDelay(_tx_delay);
 		}
 		return 1;
 	}
