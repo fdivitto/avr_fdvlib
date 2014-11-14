@@ -141,6 +141,7 @@ const int XMIT_START_ADJUSTMENT = 6;
 
 
 
+
 inline void tunedDelay(uint16_t delay)
 {
 	uint8_t tmp=0;
@@ -156,6 +157,26 @@ inline void tunedDelay(uint16_t delay)
 }
 
 
+// start timer 1 (no prescaler, no interrupt)
+#define TIMER1_START \
+	TIMSK1 = 0; \
+	TCCR1A = 0; \
+	TCNT1  = 0; \
+	OCR1A  = 0xFFFF; \
+	TIFR1 |= (1 << OCF1A); \
+	TCCR1B = 1 << CS10;
+
+#define TIMER1_SETCHECKPOINT_A(value) \
+  OCR1A = value;
+	
+#define TIMER1_WAITCHECKPOINT_A \
+	while ((TIFR1 & (1 << OCF1A)) == 0) \
+	  ; \
+	TIFR1 |= (1 << OCF1A);
+
+#define TIMER1_WAIT(value) \
+  TIMER1_SETCHECKPOINT_A(value); \
+	TIMER1_WAITCHECKPOINT_A
 
 
 // Only one instance at the time can be enabled to receive (to enable call listen(), to disable listen(false)). 
@@ -178,6 +199,9 @@ private:
 	uint16_t _tx_delay;
 
 	bool _buffer_overflow;
+	
+	uint16_t _symbol_ticks;
+	
 
 	// private methods
 	
@@ -187,28 +211,35 @@ private:
 	void recv()
 	{
 
-		uint8_t d = 0;
+		TIMER1_START;
+		DEBUG_PIN.writeHigh();
+		delayMicroseconds(5);
+		DEBUG_PIN.writeLow();
 
-		// If RX line is high, then we don't see any start bit
-		// so interrupt is probably not for us
 		if (_receivePin->read() == 0)
 		{
-			// Wait approximately 1/2 of a bit width to "center" the sample
-			tunedDelay(_rx_delay_centering - 30);
+			uint16_t t = (_symbol_ticks >> 1) - 144;  // 9600=-144
+			TIMER1_WAIT(t);
+			DEBUG_PIN.writeHigh();
+			delayMicroseconds(5);
+			DEBUG_PIN.writeLow();
 
-			// Read each of the 8 bits
-			for (uint8_t i=0x1; i; i <<= 1)
+			uint8_t d = 0;
+			for (uint8_t i = 0; i != 8; ++i)
 			{
-				tunedDelay(_rx_delay_intrabit);
-				uint8_t noti = ~i;
-				if (_receivePin->read())
-					d |= i;
-				else // else clause added to ensure function timing is ~balanced
-					d &= noti;
+				t += _symbol_ticks;
+				TIMER1_WAIT(t);
+				d |= _receivePin->read() << i;
+				DEBUG_PIN.writeHigh();
+				delayMicroseconds(5);
+				DEBUG_PIN.writeLow();
 			}
 
-			// skip the stop bit
-			tunedDelay(_rx_delay_stopbit);
+			t += _symbol_ticks;
+			TIMER1_WAIT(t);
+			DEBUG_PIN.writeHigh();
+			delayMicroseconds(5);
+			DEBUG_PIN.writeLow();
 
 			// if buffer full, set the overflow flag and return
 			if ((_receive_buffer_tail + 1) % _SS_MAX_RX_BUFF != _receive_buffer_head)
@@ -282,6 +313,8 @@ public:
 				break;
 			}
 		}
+		
+		_symbol_ticks = F_CPU / speed;
 
 		tunedDelay(_tx_delay); // if we were low this establishes the end
 
