@@ -215,7 +215,7 @@ namespace fdv
       for (;bufferLen > 0; --bufferLen)
       {
         while (!((*SERIAL_CONF[SerialIndexV][UCSRnA]) & (1 << SERIAL_BITS[SerialIndexV][UDREn])));
-        *SERIAL_CONF[SerialIndexV][UDRn] = *buffer++;
+          *SERIAL_CONF[SerialIndexV][UDRn] = *buffer++;
       }
     }
 	
