@@ -29,6 +29,7 @@
 
 #include "fdv_pin.h"
 #include "fdv_interrupt.h"
+#include "fdv_timers.h"
 
 
 namespace fdv
@@ -40,30 +41,11 @@ namespace fdv
 
 
 
-// start timer 1 (no prescaler, no interrupt)
-#define TIMER1_START \
-	TIMSK1 = 0; \
-	TCCR1A = 0; \
-	TCNT1  = 0; \
-	OCR1A  = 0xFFFF; \
-	TIFR1 |= (1 << OCF1A); \
-	TCCR1B = 1 << CS10;
-	
-#define TIMER1_SETCHECKPOINT_A(value) \
-	TIFR1 |= (1 << OCF1A); \
-  OCR1A = value;
-	
-#define TIMER1_WAITCHECKPOINT_A \
-	while ((TIFR1 & (1 << OCF1A)) == 0);	
-
-#define TIMER1_WAIT(value) \
-  TIMER1_SETCHECKPOINT_A(value); \
-	TIMER1_WAITCHECKPOINT_A
-
 
 // Only one instance at the time can be enabled to receive (to enable call listen(), to disable listen(false)). 
 // output pins: everyone
 // input pins:  everyone
+template <typename RXPIN_T, typename TXPIN_T>
 class SoftwareSerial : public PCExtInterrupt::IExtInterruptCallable
 {
 private:
@@ -71,9 +53,6 @@ private:
 	char _receive_buffer[_SS_MAX_RX_BUFF];
 	volatile uint8_t _receive_buffer_tail;
 	volatile uint8_t _receive_buffer_head;
-
-	Pin const* _receivePin;
-	Pin const* _transmitPin;
 
 	bool _buffer_overflow;
 	
@@ -86,50 +65,42 @@ private:
 	// The receive routine called by the interrupt handler
 	// Assume interrupts disabled
 	void recv()
-	{
-		if (_receivePin->read() == 0)
+	{				
+		
+		if (RXPIN_T::read() == 0)
 		{
-			uint16_t intdelay = 256;
+
+			timer1Start(97 * (F_CPU / 100000) / 100);  // 97 = 9.7us (measured from RX pin falling and the end of timer1Start()
+
 			bool doloop = true;
 			while (doloop)
-			{
+			{				
 
-				TIMER1_START;
-				DEBUG_PIN.writeHigh();
-				delayMicroseconds(4);
-				DEBUG_PIN.writeLow();
+				uint16_t t = _symbol_ticks >> 1;
 
-				uint16_t t = (_symbol_ticks >> 1) - intdelay;
-				TIMER1_WAIT(t);
-				DEBUG_PIN.writeHigh();
-				delayMicroseconds(4);
-				DEBUG_PIN.writeLow();
+				timer1WaitA(t);				
 			
-				if (_receivePin->read() != 0)
-					return;	// spurious start bit
-
 				uint8_t d = 0;
 				for (uint8_t i = 0; i != 8; ++i)
 				{
 					t += _symbol_ticks;
-					TIMER1_WAIT(t);
-					d |= _receivePin->read() << i;
-					DEBUG_PIN.writeHigh();
-					delayMicroseconds(8);
-					DEBUG_PIN.writeLow();
+					timer1WaitA(t);
+					d |= RXPIN_T::read() << i;
+		
+		// debug
+		TPinD4::writeHigh();
+		TPinD4::writeLow();
+		
 				}
 
 				// stop bit
 				t += _symbol_ticks;
-				TIMER1_WAIT(t);
-				DEBUG_PIN.writeHigh();
-				delayMicroseconds(4);
-				DEBUG_PIN.writeLow();
-			
+				timer1WaitA(t);
+				
 				// reset pin change int flag
 				PCIFR = (1 << PCIF0) | (1 << PCIF1) | (1 << PCIF2);
 
-				if (_receivePin->read() == 0)
+				if (RXPIN_T::read() == 0)
 					return;	// invalid stop bit
 			
 				// if buffer full, set the overflow flag and return
@@ -146,11 +117,12 @@ private:
 				
 				// wait for another start bit
 				t += _symbol_ticks;
-				TIMER1_SETCHECKPOINT_A(t);
-				while ((TIFR1 & (1 << OCF1A)) == 0 && _receivePin->read() != 0)
+				timer1SetCheckPointA(t);
+				while ((TIFR1 & (1 << OCF1A)) == 0 && RXPIN_T::read() != 0)
 					;
-				doloop = _receivePin->read() == 0;				
-				intdelay = 96;	// reduce interrupt delay
+				doloop = RXPIN_T::read() == 0;
+				if (doloop)
+					timer1Start(23 * (F_CPU / 100000) / 100);  // 23 = 2.3us (measured from RX pin falling and the end of timer1Start()
 			}			
 		}
 	}
@@ -159,18 +131,16 @@ private:
 public:
 	
 	// public methods
-	SoftwareSerial(Pin const* receivePin, Pin const* transmitPin) :
+	SoftwareSerial() :
     _receive_buffer_tail(0),
     _receive_buffer_head(0),
 		_buffer_overflow(false)
 	{
-		_transmitPin = transmitPin;
-		_transmitPin->modeOutput();
-		_transmitPin->writeHigh();
+		TXPIN_T::modeOutput();
+		TXPIN_T::writeHigh();
 
-		_receivePin = receivePin;
-		_receivePin->modeInput();
-		_receivePin->writeHigh(); // pullup
+		RXPIN_T::modeInput();
+		RXPIN_T::writeHigh(); // pullup
 	}
 	
 	
@@ -190,7 +160,7 @@ public:
 	// This function sets the current object as the "listening" one
 	void listen(bool enable = true)
 	{
-		PCExtInterrupt::attach(_receivePin->PCEXT_INT, NULL);
+		PCExtInterrupt::attach(RXPIN_T::PCEXT_INT, NULL);
 		if (enable)
 		{
 			ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
@@ -198,7 +168,7 @@ public:
 				_buffer_overflow = false;
 				_receive_buffer_head = _receive_buffer_tail = 0;
 			}			
-			PCExtInterrupt::attach(_receivePin->PCEXT_INT, this);
+			PCExtInterrupt::attach(RXPIN_T::PCEXT_INT, this);
 		}
 	}
 	
@@ -230,23 +200,26 @@ public:
 		ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
 		{
 			// Write the start bit
-			TIMER1_START;
-			_transmitPin->writeLow();
+			timer1Start();
+			TXPIN_T::writeLow();
 			uint16_t t = _symbol_ticks;
-			TIMER1_WAIT(t);
+			timer1WaitA(t);
 
 			// Write each of the 8 bits
 			for (uint8_t mask = 0x01; mask; mask <<= 1)
 			{
-				_transmitPin->write(b & mask);
+				TXPIN_T::write(b & mask);
+		// debug
+		TPinD4::writeHigh();
+		TPinD4::writeLow();
 				t += _symbol_ticks;
-				TIMER1_WAIT(t);
+				timer1WaitA(t);
 			}
 
 			// stop bit
-			_transmitPin->writeHigh();
+			TXPIN_T::writeHigh();
 			t += _symbol_ticks;
-			TIMER1_WAIT(t);
+			timer1WaitA(t);
 		}
 		return 1;
 	}

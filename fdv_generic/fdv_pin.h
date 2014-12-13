@@ -46,7 +46,7 @@ namespace fdv
     volatile uint8_t*      OUT_ADDR;
     uint8_t                BIT_MSK;
     ExtInterrupt::ExtInt   EXT_INT;
-	PCExtInterrupt::ExtInt PCEXT_INT;
+	  PCExtInterrupt::ExtInt PCEXT_INT;
     uint8_t                ADC_PIN;
 
     void modeOutput() const
@@ -81,9 +81,67 @@ namespace fdv
     {
       return (*IN_ADDR & BIT_MSK) ? 1 : 0;
     }
+		
+		uint8_t readRaw() const
+		{
+			return *IN_ADDR & BIT_MSK;
+		}
+			
   };
 
 
+
+
+	// Template for template based pins
+	template <typename PORT_T, uint8_t BIT_V, ExtInterrupt::ExtInt EXT_INT_V, PCExtInterrupt::ExtInt PCEXT_INT_V, uint8_t ADC_PIN_V = 0>
+	struct TPin
+	{
+		static ExtInterrupt::ExtInt const EXT_INT = EXT_INT_V;
+		static PCExtInterrupt::ExtInt const PCEXT_INT = PCEXT_INT_V;
+		static uint8_t const ADC_PIN = ADC_PIN_V;
+		
+    inline static void modeOutput() __attribute__((always_inline))
+    {
+	    *PORT_T::DDR() |= BIT_V;
+    }
+
+    inline static void modeInput() __attribute__((always_inline))
+    {
+	    *PORT_T::DDR() &= ~BIT_V;
+    }
+
+    inline static void writeLow() __attribute__((always_inline))
+    {
+	    *PORT_T::PORT() &= ~BIT_V;
+    }
+
+    inline static void writeHigh() __attribute__((always_inline))
+    {
+	    *PORT_T::PORT() |= BIT_V;
+    }
+
+    inline static void write(uint8_t level) __attribute__((always_inline))
+    {
+	    if (level)
+				*PORT_T::PORT() |= BIT_V;
+	    else
+				*PORT_T::PORT() &= ~BIT_V;
+    }
+
+    inline static uint8_t read() __attribute__((always_inline))
+    {
+	    return (*PORT_T::PIN() & BIT_V) ? 1 : 0;
+    }
+    
+    inline static uint8_t readRaw() __attribute__((always_inline))
+    {
+	    return *PORT_T::PIN() & BIT_V;
+    }		
+	};
+	
+	
+	
+	
 
 #if defined (FDV_ATMEGA88_328)
 
@@ -133,7 +191,33 @@ namespace fdv
 #define PinArduinoSDCARD_CS                 PinD4  /* CS of SDCARD (D-4)   */
 #define PinArduinoSDCARD_WRITEPROTECTSENSOR PinC0  /* write protect sensor */
 #define PinArduinoSDCARD_PLUGGEDINSENSOR    PinC1  /* plugged in sensor    */
+	
 
+	// template based pins
+	
+	struct PortB
+	{
+		static volatile uint8_t* DDR()  { return &DDRB; }
+		static volatile uint8_t* PIN()  { return &PINB; }
+		static volatile uint8_t* PORT() { return &PORTB; }
+	};
+	
+  typedef TPin<PortB, _BV(PB0), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT0> TPinB0;
+	typedef TPin<PortB, _BV(PB1), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT1> TPinB1;
+	
+
+	struct PortD
+	{
+		static volatile uint8_t* DDR()  { return &DDRD; }
+		static volatile uint8_t* PIN()  { return &PIND; }
+		static volatile uint8_t* PORT() { return &PORTD; }
+	};
+
+	typedef TPin<PortD, _BV(PD2), ExtInterrupt::EXTINT_INT0, PCExtInterrupt::PCEXTINT_INT18> TPinD2;
+	typedef TPin<PortD, _BV(PD3), ExtInterrupt::EXTINT_INT1, PCExtInterrupt::PCEXTINT_INT19> TPinD3;
+	typedef TPin<PortD, _BV(PD4), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT20> TPinD4;
+		
+	
 
 
 

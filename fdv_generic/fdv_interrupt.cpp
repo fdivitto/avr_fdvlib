@@ -28,6 +28,7 @@
 
 #include "fdv_interrupt.h"
 #include "fdv_platform.h"
+#include "fdv_timers.h"
 
 
 
@@ -37,54 +38,53 @@ namespace fdv
   ExtInterrupt::IExtInterruptCallable* ExtInterrupt::s_callableObjects[EXTERNAL_NUM_INTERRUPTS];
 
 
-
 #if defined(FDV_ATMEGA1280_2560)
 
   ISR(INT0_vect)
   {
-    if(ExtInterrupt::s_callableObjects[ExtInterrupt::EXTINT_INT0])
-      ExtInterrupt::s_callableObjects[ExtInterrupt::EXTINT_INT0]->extInterrupt();
+    if (ExtInterrupt::s_callableObjects[ExtInterrupt::EXTINT_INT0])
+			ExtInterrupt::s_callableObjects[ExtInterrupt::EXTINT_INT0]->extInterrupt();
   }
 
   ISR(INT1_vect)
   {
-    if(ExtInterrupt::s_callableObjects[ExtInterrupt::EXTINT_INT1])
+    if (ExtInterrupt::s_callableObjects[ExtInterrupt::EXTINT_INT1])
       ExtInterrupt::s_callableObjects[ExtInterrupt::EXTINT_INT1]->extInterrupt();
   }
 
   ISR(INT2_vect)
   {
-    if(ExtInterrupt::s_callableObjects[ExtInterrupt::EXTINT_INT2])
+    if (ExtInterrupt::s_callableObjects[ExtInterrupt::EXTINT_INT2])
       ExtInterrupt::s_callableObjects[ExtInterrupt::EXTINT_INT2]->extInterrupt();
   }
 
   ISR(INT3_vect)
   {
-    if(ExtInterrupt::s_callableObjects[ExtInterrupt::EXTINT_INT3])
+    if (ExtInterrupt::s_callableObjects[ExtInterrupt::EXTINT_INT3])
       ExtInterrupt::s_callableObjects[ExtInterrupt::EXTINT_INT3]->extInterrupt();
   }
 
   ISR(INT4_vect)
   {
-    if(ExtInterrupt::s_callableObjects[ExtInterrupt::EXTINT_INT4])
+    if (ExtInterrupt::s_callableObjects[ExtInterrupt::EXTINT_INT4])
       ExtInterrupt::s_callableObjects[ExtInterrupt::EXTINT_INT4]->extInterrupt();
   }
 
   ISR(INT5_vect)
   {
-    if(ExtInterrupt::s_callableObjects[ExtInterrupt::EXTINT_INT5])
+    if (ExtInterrupt::s_callableObjects[ExtInterrupt::EXTINT_INT5])
       ExtInterrupt::s_callableObjects[ExtInterrupt::EXTINT_INT5]->extInterrupt();
   }
 
   ISR(INT6_vect)
   {
-    if(ExtInterrupt::s_callableObjects[ExtInterrupt::EXTINT_INT6])
+    if (ExtInterrupt::s_callableObjects[ExtInterrupt::EXTINT_INT6])
       ExtInterrupt::s_callableObjects[ExtInterrupt::EXTINT_INT6]->extInterrupt();
   }
 
   ISR(INT7_vect)
   {
-    if(ExtInterrupt::s_callableObjects[ExtInterrupt::EXTINT_INT7])
+    if (ExtInterrupt::s_callableObjects[ExtInterrupt::EXTINT_INT7])
       ExtInterrupt::s_callableObjects[ExtInterrupt::EXTINT_INT7]->extInterrupt();
   }
 
@@ -92,13 +92,13 @@ namespace fdv
 
   ISR(INT0_vect)
   {
-    if(ExtInterrupt::s_callableObjects[ExtInterrupt::EXTINT_INT0])
+    if (ExtInterrupt::s_callableObjects[ExtInterrupt::EXTINT_INT0])
       ExtInterrupt::s_callableObjects[ExtInterrupt::EXTINT_INT0]->extInterrupt();
   }
 
   ISR(INT1_vect)
   {
-    if(ExtInterrupt::s_callableObjects[ExtInterrupt::EXTINT_INT1])
+    if (ExtInterrupt::s_callableObjects[ExtInterrupt::EXTINT_INT1])
       ExtInterrupt::s_callableObjects[ExtInterrupt::EXTINT_INT1]->extInterrupt();
   }
 
@@ -131,19 +131,19 @@ namespace fdv
 
   ISR(PCINT0_vect)
   {
-    if(PCExtInterrupt::s_callableObjects[PCExtInterrupt::PCEXTINT_0_7])
+    if (PCExtInterrupt::s_callableObjects[PCExtInterrupt::PCEXTINT_0_7])
       PCExtInterrupt::s_callableObjects[PCExtInterrupt::PCEXTINT_0_7]->extInterrupt();
   }
 
   ISR(PCINT1_vect)
   {
-    if(PCExtInterrupt::s_callableObjects[PCExtInterrupt::PCEXTINT_8_14])
+    if (PCExtInterrupt::s_callableObjects[PCExtInterrupt::PCEXTINT_8_14])
       PCExtInterrupt::s_callableObjects[PCExtInterrupt::PCEXTINT_8_14]->extInterrupt();
   }
 
   ISR(PCINT2_vect)
   {
-    if(PCExtInterrupt::s_callableObjects[PCExtInterrupt::PCEXTINT_16_23])
+    if (PCExtInterrupt::s_callableObjects[PCExtInterrupt::PCEXTINT_16_23])
       PCExtInterrupt::s_callableObjects[PCExtInterrupt::PCEXTINT_16_23]->extInterrupt();
   }
 

@@ -45,8 +45,6 @@ namespace fdv
   uint8_t volatile  s_specialMeasure      = 0;  // 0 = nop,  1 = measure pulse,   2 = delay millis (delay() support)
   uint32_t volatile s_specialMeasureValue = 0; 
 
-  // nested timeout support
-
 
   // interrupt handler
 #if defined(FDV_ATMEGA88_328) || defined(FDV_ATMEGA1280_2560)
@@ -55,6 +53,11 @@ namespace fdv
   ISR(TIM0_OVF_vect)
 #endif
   {
+		// This is a low priority interrupt. Don't remove this "sei"
+		// otherwise other critical interrupt tasks (like this softserial implementation)
+		// may not work correctly.
+		sei();
+		
     // inside measurePulse function?
     if (s_specialMeasure == 1)
     {

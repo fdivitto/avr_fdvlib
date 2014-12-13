@@ -50,28 +50,15 @@ namespace fdv
 #endif
 
 
-#if F_CPU == 16000000L
-  // 16Mhz
-  static uint16_t const BPS_TO_UBR[] PROGMEM = {416, 207, 103, 68, 51, 25, 16, 8};   // 2400, 4800, 9600, 14400, 19200, 38400, 57600, 115200
-#elif F_CPU == 8000000L
-  // 8Mhz
-  static uint16_t const BPS_TO_UBR[] PROGMEM = {207, 103, 51, 34, 25, 12, 8, 3};     // 2400, 4800, 9600, 14400, 19200, 38400, 57600, 115200
-#elif F_CPU == 20000000L
-  // 20Mhz
-  static uint16_t const BPS_TO_UBR[] PROGMEM = {520, 259, 129, 86, 64, 32, 21, 10};  // 2400, 4800, 9600, 14400, 19200, 38400, 57600, 115200
-#else
-#error Please implements other F_CPU values
-#endif
 
 
-
-  uint8_t volatile* const SERIAL_CONF[SERIAL_COUNT][5] =
+  uint8_t volatile* const SERIAL_CONF[SERIAL_COUNT][6] =
   {
-    {&UBRR0H, &UBRR0L, &UCSR0A, &UCSR0B, &UDR0},
+    {&UBRR0H, &UBRR0L, &UCSR0A, &UCSR0B, &UCSR0C, &UDR0},
 #if defined(FDV_ATMEGA1280_2560)
-    {&UBRR1H, &UBRR1L, &UCSR1A, &UCSR1B, &UDR1},
-    {&UBRR2H, &UBRR2L, &UCSR2A, &UCSR2B, &UDR2},
-    {&UBRR3H, &UBRR3L, &UCSR3A, &UCSR3B, &UDR3}
+    {&UBRR1H, &UBRR1L, &UCSR1A, &UCSR1B, &UCSR1C, &UDR1},
+    {&UBRR2H, &UBRR2L, &UCSR2A, &UCSR2B, &UCSR2C, &UDR2},
+    {&UBRR3H, &UBRR3L, &UCSR3A, &UCSR3B, &UCSR3C, &UDR3}
 #endif
   };
 
@@ -96,17 +83,6 @@ namespace fdv
 
     static uint8_t const RX_BUFFER_SIZE = 16;
 
-    enum BPS
-    {
-      BPS_2400   = 0,
-      BPS_4800   = 1,
-      BPS_9600   = 2,
-      BPS_14400  = 3,
-      BPS_19200  = 4,
-      BPS_38400  = 5,
-      BPS_57600  = 6,
-      BPS_115200 = 7
-    };
 
   private:
 
@@ -136,18 +112,19 @@ namespace fdv
 
   public:
 
-    explicit HardwareSerial(BPS bps)
+    explicit HardwareSerial(uint32_t baud)
     {
 			ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
 			{
 				s_buffer = &m_RXBuffer;    
 
-				*SERIAL_CONF[SerialIndexV][UCSRnA] = 0;
-				uint16_t const baud_setting = pgm_read_word(&BPS_TO_UBR[bps]);
+				*SERIAL_CONF[SerialIndexV][UCSRnA] = _BV(SERIAL_BITS[SerialIndexV][U2Xn]);
+				uint16_t const baud_setting = (F_CPU / 4 / baud - 1) / 2;
 				*SERIAL_CONF[SerialIndexV][UBRnH] = baud_setting >> 8;
 				*SERIAL_CONF[SerialIndexV][UBRnL] = baud_setting & 0xFF;
 
 				*SERIAL_CONF[SerialIndexV][UCSRnB] |= _BV(SERIAL_BITS[SerialIndexV][RXENn]) | _BV(SERIAL_BITS[SerialIndexV][TXENn]) | _BV(SERIAL_BITS[SerialIndexV][RXCIEn]);
+				*SERIAL_CONF[SerialIndexV][UCSRnC] = _BV(UCSZ01) | _BV(UCSZ00); 
 			}
     }
 
@@ -316,13 +293,14 @@ namespace fdv
     static uint8_t const UBRnL  = 1;
     static uint8_t const UCSRnA = 2;
     static uint8_t const UCSRnB = 3;
-    static uint8_t const UDRn   = 4;
+		static uint8_t const UCSRnC = 4;
+    static uint8_t const UDRn   = 5;
 
     static uint8_t const RXENn  = 0;
     static uint8_t const TXENn  = 1;
     static uint8_t const RXCIEn = 2;
     static uint8_t const UDREn  = 3;
-    static uint8_t const UZXn   = 4;
+    static uint8_t const U2Xn   = 4;
 
     RingBuffer m_RXBuffer;
   };
@@ -423,9 +401,10 @@ namespace fdv
   }
 
 
-#ifndef cout
-#  define cout serial
-#endif
+
+//#ifndef cout
+//#  define cout serial
+//#endif
 
 
 }
