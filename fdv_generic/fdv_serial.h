@@ -43,39 +43,78 @@
 namespace fdv
 {
 
+
+	struct DescSerial0
+	{
+		static uint8_t const RXENn  = RXEN0;
+		static uint8_t const TXENn  = TXEN0;
+		static uint8_t const RXCIEn = RXCIE0;
+		static uint8_t const UDREn  = UDRE0;
+		static uint8_t const U2Xn   = U2X0;
+		static volatile uint8_t* UBRRnH()  { return &UBRR0H; }	
+		static volatile uint8_t* UBRRnL()  { return &UBRR0L; }	
+		static volatile uint8_t* UCSRnA()  { return &UCSR0A; }	
+		static volatile uint8_t* UCSRnB()  { return &UCSR0B; }	
+		static volatile uint8_t* UCSRnC()  { return &UCSR0C; }	
+		static volatile uint8_t* UDRn()    { return &UDR0; }	
+	};
+	
+	
 #if defined(FDV_ATMEGA1280_2560)
-  static uint8_t const SERIAL_COUNT = 4;
-#else
-  static uint8_t const SERIAL_COUNT = 1;
+
+	struct DescSerial1
+	{
+		static uint8_t const RXENn  = RXEN1;
+		static uint8_t const TXENn  = TXEN1;
+		static uint8_t const RXCIEn = RXCIE1;
+		static uint8_t const UDREn  = UDRE1;
+		static uint8_t const U2Xn   = U2X1;
+		static volatile uint8_t* UBRRnH()  { return &UBRR1H; }
+		static volatile uint8_t* UBRRnL()  { return &UBRR1L; }
+		static volatile uint8_t* UCSRnA()  { return &UCSR1A; }
+		static volatile uint8_t* UCSRnB()  { return &UCSR1B; }
+		static volatile uint8_t* UCSRnC()  { return &UCSR1C; }
+		static volatile uint8_t* UDRn()    { return &UDR1; }
+	};
+
+	struct DescSerial2
+	{
+		static uint8_t const RXENn  = RXEN2;
+		static uint8_t const TXENn  = TXEN2;
+		static uint8_t const RXCIEn = RXCIE2;
+		static uint8_t const UDREn  = UDRE2;
+		static uint8_t const U2Xn   = U2X2;
+		static volatile uint8_t* UBRRnH()  { return &UBRR2H; }
+		static volatile uint8_t* UBRRnL()  { return &UBRR2L; }
+		static volatile uint8_t* UCSRnA()  { return &UCSR2A; }
+		static volatile uint8_t* UCSRnB()  { return &UCSR2B; }
+		static volatile uint8_t* UCSRnC()  { return &UCSR2C; }
+		static volatile uint8_t* UDRn()    { return &UDR2; }
+	};
+
+	struct DescSerial3
+	{
+		static uint8_t const RXENn  = RXEN3;
+		static uint8_t const TXENn  = TXEN3;
+		static uint8_t const RXCIEn = RXCIE3;
+		static uint8_t const UDREn  = UDRE3;
+		static uint8_t const U2Xn   = U2X3;
+		static volatile uint8_t* UBRRnH()  { return &UBRR3H; }
+		static volatile uint8_t* UBRRnL()  { return &UBRR3L; }
+		static volatile uint8_t* UCSRnA()  { return &UCSR3A; }
+		static volatile uint8_t* UCSRnB()  { return &UCSR3B; }
+		static volatile uint8_t* UCSRnC()  { return &UCSR3C; }
+		static volatile uint8_t* UDRn()    { return &UDR3; }
+	};
+
+
 #endif
 
 
-
-
-  uint8_t volatile* const SERIAL_CONF[SERIAL_COUNT][6] =
-  {
-    {&UBRR0H, &UBRR0L, &UCSR0A, &UCSR0B, &UCSR0C, &UDR0},
-#if defined(FDV_ATMEGA1280_2560)
-    {&UBRR1H, &UBRR1L, &UCSR1A, &UCSR1B, &UCSR1C, &UDR1},
-    {&UBRR2H, &UBRR2L, &UCSR2A, &UCSR2B, &UCSR2C, &UDR2},
-    {&UBRR3H, &UBRR3L, &UCSR3A, &UCSR3B, &UCSR3C, &UDR3}
-#endif
-  };
-
-
-  uint8_t const SERIAL_BITS[SERIAL_COUNT][5] =
-  {
-    {RXEN0, TXEN0, RXCIE0, UDRE0, U2X0},
-#if defined(FDV_ATMEGA1280_2560)
-    {RXEN1, TXEN1, RXCIE1, UDRE1, U2X1},
-    {RXEN2, TXEN2, RXCIE2, UDRE2, U2X2},
-    {RXEN3, TXEN3, RXCIE3, UDRE3, U2X3}
-#endif
-  };
 
 
   // TODO: support ATTiny84/85?
-  template <uint8_t SerialIndexV>
+  template <typename SerialDesc_T>
   class HardwareSerial
   {
 
@@ -118,13 +157,13 @@ namespace fdv
 			{
 				s_buffer = &m_RXBuffer;    
 
-				*SERIAL_CONF[SerialIndexV][UCSRnA] = _BV(SERIAL_BITS[SerialIndexV][U2Xn]);
+				*SerialDesc_T::UCSRnA() = _BV(SerialDesc_T::U2Xn);
 				uint16_t const baud_setting = (F_CPU / 4 / baud - 1) / 2;
-				*SERIAL_CONF[SerialIndexV][UBRnH] = baud_setting >> 8;
-				*SERIAL_CONF[SerialIndexV][UBRnL] = baud_setting & 0xFF;
+				*SerialDesc_T::UBRRnH() = baud_setting >> 8;
+				*SerialDesc_T::UBRRnL() = baud_setting & 0xFF;
 
-				*SERIAL_CONF[SerialIndexV][UCSRnB] |= _BV(SERIAL_BITS[SerialIndexV][RXENn]) | _BV(SERIAL_BITS[SerialIndexV][TXENn]) | _BV(SERIAL_BITS[SerialIndexV][RXCIEn]);
-				*SERIAL_CONF[SerialIndexV][UCSRnC] = _BV(UCSZ01) | _BV(UCSZ00); 
+				*SerialDesc_T::UCSRnB() |= _BV(SerialDesc_T::RXENn) | _BV(SerialDesc_T::TXENn) | _BV(SerialDesc_T::RXCIEn);
+				*SerialDesc_T::UCSRnC() = _BV(UCSZ01) | _BV(UCSZ00); 
 			}
     }
 
@@ -191,8 +230,8 @@ namespace fdv
     {
       for (;bufferLen > 0; --bufferLen)
       {
-        while (!((*SERIAL_CONF[SerialIndexV][UCSRnA]) & (1 << SERIAL_BITS[SerialIndexV][UDREn])));
-          *SERIAL_CONF[SerialIndexV][UDRn] = *buffer++;
+        while (!((*SerialDesc_T::UCSRnA()) & _BV(SerialDesc_T::UDREn)));
+          *SerialDesc_T::UDRn() = *buffer++;
       }
     }
 	
@@ -288,27 +327,22 @@ namespace fdv
   private:
 
     static RingBuffer* s_buffer;
-
-    static uint8_t const UBRnH  = 0;
-    static uint8_t const UBRnL  = 1;
-    static uint8_t const UCSRnA = 2;
-    static uint8_t const UCSRnB = 3;
-		static uint8_t const UCSRnC = 4;
-    static uint8_t const UDRn   = 5;
-
-    static uint8_t const RXENn  = 0;
-    static uint8_t const TXENn  = 1;
-    static uint8_t const RXCIEn = 2;
-    static uint8_t const UDREn  = 3;
-    static uint8_t const U2Xn   = 4;
-
+	
     RingBuffer m_RXBuffer;
   };
 
 
-  template <uint8_t SerialIndexV>
-  typename HardwareSerial<SerialIndexV>::RingBuffer* HardwareSerial<SerialIndexV>::s_buffer;
+  template <typename SerialDesc_T>
+  typename HardwareSerial<SerialDesc_T>::RingBuffer* HardwareSerial<SerialDesc_T>::s_buffer;
 
+
+
+	typedef HardwareSerial<DescSerial0> HardwareSerial0;
+	#if defined(FDV_ATMEGA1280_2560)
+	typedef HardwareSerial<DescSerial1> HardwareSerial1;
+	typedef HardwareSerial<DescSerial2> HardwareSerial2;
+	typedef HardwareSerial<DescSerial3> HardwareSerial3;
+	#endif
 
 
   template <typename T>

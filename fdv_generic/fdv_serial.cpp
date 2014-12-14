@@ -46,29 +46,29 @@ namespace fdv
 
   ISR(USART0_RX_vect)
   {
-    HardwareSerial<0>::getBuffer()->put(UDR0);
+    HardwareSerial<DescSerial0>::getBuffer()->put(UDR0);
   }
 
   ISR(USART1_RX_vect)
   {
-    HardwareSerial<1>::getBuffer()->put(UDR1);
+    HardwareSerial<DescSerial1>::getBuffer()->put(UDR1);
   }
 
   ISR(USART2_RX_vect)
   {
-    HardwareSerial<2>::getBuffer()->put(UDR2);
+    HardwareSerial<DescSerial2>::getBuffer()->put(UDR2);
   }
 
   ISR(USART3_RX_vect)
   {
-    HardwareSerial<3>::getBuffer()->put(UDR3);
+    HardwareSerial<DescSerial3>::getBuffer()->put(UDR3);
   }
 
 #else
 
   ISR(USART_RX_vect)
   {
-    HardwareSerial<0>::getBuffer()->put(UDR0);
+    HardwareSerial<DescSerial0>::getBuffer()->put(UDR0);
   }
 
 #endif

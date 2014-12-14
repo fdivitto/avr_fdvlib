@@ -36,6 +36,12 @@
 // TODO: software SPI
 
 
+#define PinSPI_SS   TPinB2
+#define PinSPI_MOSI TPinB3
+#define PinSPI_MISO TPinB4
+#define PinSPI_SCK  TPinB5
+
+
 
 namespace fdv
 {
@@ -94,16 +100,16 @@ namespace fdv
       if (s_HardwareInstances == 0)
       {
         // to setup hardware SPI
-        PinSPI_SCK.modeOutput();
-        PinSPI_MOSI.modeOutput();
-        PinSPI_MISO.modeInput();
-        PinSPI_SS.modeOutput();
+        PinSPI_SCK::modeOutput();
+        PinSPI_MOSI::modeOutput();
+        PinSPI_MISO::modeInput();
+        PinSPI_SS::modeOutput();
 
-        PinSPI_SCK.writeLow();
-        PinSPI_MOSI.writeLow();
+        PinSPI_SCK::writeLow();
+        PinSPI_MOSI::writeLow();
 
-        PinSPI_SS.writeLow();  // intermediate low state
-        PinSPI_SS.writeHigh();
+        PinSPI_SS::writeLow();  // intermediate low state
+        PinSPI_SS::writeHigh();
       }
       calc_SPCR_SPSR();
       ++s_HardwareInstances;

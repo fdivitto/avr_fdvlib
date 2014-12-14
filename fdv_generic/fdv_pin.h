@@ -96,9 +96,9 @@ namespace fdv
 	template <typename PORT_T, uint8_t BIT_V, ExtInterrupt::ExtInt EXT_INT_V, PCExtInterrupt::ExtInt PCEXT_INT_V, uint8_t ADC_PIN_V = 0>
 	struct TPin
 	{
-		static ExtInterrupt::ExtInt const EXT_INT = EXT_INT_V;
+		static ExtInterrupt::ExtInt const   EXT_INT   = EXT_INT_V;
 		static PCExtInterrupt::ExtInt const PCEXT_INT = PCEXT_INT_V;
-		static uint8_t const ADC_PIN = ADC_PIN_V;
+		static uint8_t const                ADC_PIN   = ADC_PIN_V;
 		
     inline static void modeOutput() __attribute__((always_inline))
     {
@@ -156,14 +156,6 @@ namespace fdv
   Pin const PinB6 = {&DDRB, &PINB, &PORTB, _BV(PB6), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT6};  // Arduino (XTAL1) (PCINT6)
   Pin const PinB7 = {&DDRB, &PINB, &PORTB, _BV(PB7), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT7};  // Arduino (XTAL2) (PCINT7)
 
-
-#define PinSPI_SS   PinB2
-#define PinSPI_MOSI PinB3
-#define PinSPI_MISO PinB4
-#define PinSPI_SCK  PinB5
-
-#define PinLED PinB5
-
   // PORT-C
 
   Pin const PinC0 = {&DDRC, &PINC, &PORTC, _BV(PC0), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT8, 0};  // Arduino A-0 (ADC0) (PCINT8)
@@ -184,13 +176,6 @@ namespace fdv
   Pin const PinD5 = {&DDRD, &PIND, &PORTD, _BV(PD5), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT21}; // Arduino D-5 (PCINT21)
   Pin const PinD6 = {&DDRD, &PIND, &PORTD, _BV(PD6), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT22}; // Arduino D-6 (PCINT22)
   Pin const PinD7 = {&DDRD, &PIND, &PORTD, _BV(PD7), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT23}; // Arduino D-7 (PCINT23)
-
-  // Arduino Ethernet/SD shield (v.05)
-
-#define PinArduinoETHERNET_CS               PinB2  /* CS of W5100  (D-10)  */
-#define PinArduinoSDCARD_CS                 PinD4  /* CS of SDCARD (D-4)   */
-#define PinArduinoSDCARD_WRITEPROTECTSENSOR PinC0  /* write protect sensor */
-#define PinArduinoSDCARD_PLUGGEDINSENSOR    PinC1  /* plugged in sensor    */
 	
 
 	// template based pins
@@ -202,9 +187,30 @@ namespace fdv
 		static volatile uint8_t* PORT() { return &PORTB; }
 	};
 	
-  typedef TPin<PortB, _BV(PB0), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT0> TPinB0;
-	typedef TPin<PortB, _BV(PB1), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT1> TPinB1;
+  typedef TPin<PortB, _BV(PB0), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT0> TPinB0;  // Arduino D-8 (PCINT0)
+  typedef TPin<PortB, _BV(PB1), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT1> TPinB1;  // Arduino D-9 (PCINT1)
+  typedef TPin<PortB, _BV(PB2), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT2> TPinB2;  // Arduino D-10 (SPI_SS) (PCINT2)
+  typedef TPin<PortB, _BV(PB3), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT3> TPinB3;  // Arduino D-11 (SPI_MOSI) (PCINT3)
+  typedef TPin<PortB, _BV(PB4), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT4> TPinB4;  // Arduino D-12 (SPI_MISO) (PCINT4)
+  typedef TPin<PortB, _BV(PB5), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT5> TPinB5;  // Arduino D-13 (led) (SPI_SCK) (PCINT5)
+  typedef TPin<PortB, _BV(PB6), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT6> TPinB6;  // Arduino (XTAL1) (PCINT6)
+  typedef TPin<PortB, _BV(PB7), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT7> TPinB7;  // Arduino (XTAL2) (PCINT7)
 	
+	struct PortC
+	{
+		static volatile uint8_t* DDR()  { return &DDRC; }
+		static volatile uint8_t* PIN()  { return &PINC; }
+		static volatile uint8_t* PORT() { return &PORTC; }
+	};
+
+  typedef TPin<PortC, _BV(PC0), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT8, 0>  TPinC0;  // Arduino A-0 (ADC0) (PCINT8)
+  typedef TPin<PortC, _BV(PC1), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT9, 1>  TPinC1;  // Arduino A-1 (ADC1) (PCINT9)
+  typedef TPin<PortC, _BV(PC2), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT10, 2> TPinC2;  // Arduino A-2 (ADC2) (PCINT10)
+  typedef TPin<PortC, _BV(PC3), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT11, 3> TPinC3;  // Arduino A-3 (ADC3) (PCINT11)
+  typedef TPin<PortC, _BV(PC4), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT12, 4> TPinC4;  // Arduino A-4 (ADC4)(I2C_SDL) (PCINT12)
+  typedef TPin<PortC, _BV(PC5), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT13, 5> TPinC5;  // Arduino A-5 (ADC5)(I2C_SCL) (PCINT13)
+  typedef TPin<PortC, _BV(PC6), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT14>    TPinC6;  // Arduino (RESET) (PCINT14)
+
 
 	struct PortD
 	{
@@ -213,9 +219,14 @@ namespace fdv
 		static volatile uint8_t* PORT() { return &PORTD; }
 	};
 
-	typedef TPin<PortD, _BV(PD2), ExtInterrupt::EXTINT_INT0, PCExtInterrupt::PCEXTINT_INT18> TPinD2;
-	typedef TPin<PortD, _BV(PD3), ExtInterrupt::EXTINT_INT1, PCExtInterrupt::PCEXTINT_INT19> TPinD3;
-	typedef TPin<PortD, _BV(PD4), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT20> TPinD4;
+  typedef TPin<PortD, _BV(PD0), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT16> TPinD0; // Arduino D-0 (RXD) (PCINT16)
+  typedef TPin<PortD, _BV(PD1), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT17> TPinD1; // Arduino D-1 (TXD) (PCINT17)
+  typedef TPin<PortD, _BV(PD2), ExtInterrupt::EXTINT_INT0, PCExtInterrupt::PCEXTINT_INT18> TPinD2; // Arduino D-2 (INT0) (PCINT18)
+  typedef TPin<PortD, _BV(PD3), ExtInterrupt::EXTINT_INT1, PCExtInterrupt::PCEXTINT_INT19> TPinD3; // Arduino D-3 (INT1) (PCINT19)
+  typedef TPin<PortD, _BV(PD4), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT20> TPinD4; // Arduino D-4 (PCINT20)
+  typedef TPin<PortD, _BV(PD5), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT21> TPinD5; // Arduino D-5 (PCINT21)
+  typedef TPin<PortD, _BV(PD6), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT22> TPinD6; // Arduino D-6 (PCINT22)
+  typedef TPin<PortD, _BV(PD7), ExtInterrupt::EXTINT_NONE, PCExtInterrupt::PCEXTINT_INT23> TPinD7; // Arduino D-7 (PCINT23)
 		
 	
 
