@@ -57,26 +57,33 @@ private:
 	bool _buffer_overflow;
 	
 	uint16_t _symbol_ticks;
+	uint16_t _symbol_ticks_half;
+	uint16_t _delay1;
+	uint16_t _delay2;
 	
 
 	// private methods
 	
 	//
 	// The receive routine called by the interrupt handler
-	// Assume interrupts disabled
+	// Assume interrupts disabled 
 	void recv()
 	{				
 		
 		if (RXPIN_T::read() == 0)
 		{
 
-			timer1Start(97 * (F_CPU / 100000) / 100);  // 97 = 9.7us (measured from RX pin falling and the end of timer1Start()
+			timer1Reset(_delay1);
+		// debug
+		/*TPinD4::writeHigh();
+		TPinD4::writeLow();
+		TPinD4::writeHigh();
+		TPinD4::writeLow();*/
 
-			bool doloop = true;
-			while (doloop)
+			while (true)
 			{				
 
-				uint16_t t = _symbol_ticks >> 1;
+				uint16_t t = _symbol_ticks_half;
 
 				timer1WaitA(t);				
 			
@@ -88,8 +95,8 @@ private:
 					d |= RXPIN_T::read() << i;
 		
 		// debug
-		TPinD4::writeHigh();
-		TPinD4::writeLow();
+		//TPinD4::writeHigh();
+		//TPinD4::writeLow();
 		
 				}
 
@@ -120,9 +127,9 @@ private:
 				timer1SetCheckPointA(t);
 				while ((TIFR1 & (1 << OCF1A)) == 0 && RXPIN_T::read() != 0)
 					;
-				doloop = RXPIN_T::read() == 0;
-				if (doloop)
-					timer1Start(23 * (F_CPU / 100000) / 100);  // 23 = 2.3us (measured from RX pin falling and the end of timer1Start()
+				if (RXPIN_T::read())	// is high?
+					break;	// yes, no another start bit, then exit
+				timer1Reset(_delay2);
 			}			
 		}
 	}
@@ -132,8 +139,8 @@ public:
 	
 	// public methods
 	SoftwareSerial() :
-    _receive_buffer_tail(0),
-    _receive_buffer_head(0),
+		_receive_buffer_tail(0),
+		_receive_buffer_head(0),
 		_buffer_overflow(false)
 	{
 		TXPIN_T::modeOutput();
@@ -152,7 +159,19 @@ public:
 	
 	void begin(long speed)
 	{
-		_symbol_ticks = F_CPU / speed;
+		uint16_t const prescalers[3] = {1, 8, 64};
+		uint16_t timer_prescaler = 0;
+		for (uint8_t i = 0; i != sizeof(prescalers); ++i)
+		{
+			timer_prescaler = prescalers[i];
+			_symbol_ticks = F_CPU / timer_prescaler / speed;
+			if ((uint32_t)_symbol_ticks * 10 < 65535)
+				break;
+		}
+		_symbol_ticks_half = _symbol_ticks >> 1;
+		_delay1 = 97 * (F_CPU / timer_prescaler / 100000) / 100;  // 97 = 9.7us (measured from RX pin falling and the end of timer1Reset()
+		_delay2 = 23 * (F_CPU / timer_prescaler / 100000) / 100;  // 23 = 2.3us (measured from RX pin falling and the end of timer1Reset()
+		timer1Setup(timer_prescaler);
 		listen();
 	}
 	
@@ -200,7 +219,7 @@ public:
 		ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
 		{
 			// Write the start bit
-			timer1Start();
+			timer1Reset(0);
 			TXPIN_T::writeLow();
 			uint16_t t = _symbol_ticks;
 			timer1WaitA(t);
@@ -210,8 +229,8 @@ public:
 			{
 				TXPIN_T::write(b & mask);
 		// debug
-		TPinD4::writeHigh();
-		TPinD4::writeLow();
+		//TPinD4::writeHigh();
+		//TPinD4::writeLow();
 				t += _symbol_ticks;
 				timer1WaitA(t);
 			}

@@ -32,24 +32,46 @@
 #define FDV_TIMERS_H_
 
 
-//inline void timer1Start()  __attribute__((always_inline));
+//inline void timer1Reset()  __attribute__((always_inline));
+
+
+inline void timer1Setup(uint16_t prescaler)
+{
+	TCCR1A = 0;
+	TIMSK1 = 0;
+	switch (prescaler)
+	{
+		case 1:
+			TCCR1B = _BV(CS10);
+			break;
+		case 8:
+			TCCR1B = _BV(CS11);
+			break;
+		case 64:
+			TCCR1B = _BV(CS11) | _BV(CS10);
+			break;
+		case 256:
+			TCCR1B = _BV(CS12);
+			break;
+		case 1024:
+			TCCR1B = _BV(CS12) | _BV(CS10);
+			break;
+	}	
+}
 
 
 // start timer 1 (no prescaler, no interrupt)
-inline void timer1Start(uint16_t startPoint = 0)
+inline void timer1Reset(uint16_t startPoint)
 {
-	TIMSK1 = 0;
-	TCCR1A = 0;
 	TCNT1  = startPoint;
 	OCR1A  = 0xFFFF;
-	TIFR1 |= (1 << OCF1A);
-	TCCR1B = 1 << CS10;
+	TIFR1 |= _BV(OCF1A);	
 }
 
 
 inline void timer1SetCheckPointA(uint16_t value)
 {
-	TIFR1 |= (1 << OCF1A);
+	TIFR1 |= _BV(OCF1A);
 	OCR1A = value;
 }
 
@@ -57,7 +79,7 @@ inline void timer1SetCheckPointA(uint16_t value)
 inline void timer1WaitCheckPointA()
 {
 	if (TCNT1 < OCR1A)	// already expired?
-		while ((TIFR1 & (1 << OCF1A)) == 0)
+		while ((TIFR1 & _BV(OCF1A)) == 0)
 			;
 }
 
