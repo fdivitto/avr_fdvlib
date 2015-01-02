@@ -44,84 +44,19 @@ namespace fdv
 {
 
 
-	struct DescSerial0
+
+
+	class IHardwareSerial
 	{
-		static uint8_t const RXENn  = RXEN0;
-		static uint8_t const TXENn  = TXEN0;
-		static uint8_t const RXCIEn = RXCIE0;
-		static uint8_t const UDREn  = UDRE0;
-		static uint8_t const U2Xn   = U2X0;
-		static volatile uint8_t* UBRRnH()  { return &UBRR0H; }	
-		static volatile uint8_t* UBRRnL()  { return &UBRR0L; }	
-		static volatile uint8_t* UCSRnA()  { return &UCSR0A; }	
-		static volatile uint8_t* UCSRnB()  { return &UCSR0B; }	
-		static volatile uint8_t* UCSRnC()  { return &UCSR0C; }	
-		static volatile uint8_t* UDRn()    { return &UDR0; }	
+		public:
+			virtual void put(uint8_t value) = 0;	
 	};
-	
-	
-#if defined(FDV_ATMEGA1280_2560)
-
-	struct DescSerial1
-	{
-		static uint8_t const RXENn  = RXEN1;
-		static uint8_t const TXENn  = TXEN1;
-		static uint8_t const RXCIEn = RXCIE1;
-		static uint8_t const UDREn  = UDRE1;
-		static uint8_t const U2Xn   = U2X1;
-		static volatile uint8_t* UBRRnH()  { return &UBRR1H; }
-		static volatile uint8_t* UBRRnL()  { return &UBRR1L; }
-		static volatile uint8_t* UCSRnA()  { return &UCSR1A; }
-		static volatile uint8_t* UCSRnB()  { return &UCSR1B; }
-		static volatile uint8_t* UCSRnC()  { return &UCSR1C; }
-		static volatile uint8_t* UDRn()    { return &UDR1; }
-	};
-
-	struct DescSerial2
-	{
-		static uint8_t const RXENn  = RXEN2;
-		static uint8_t const TXENn  = TXEN2;
-		static uint8_t const RXCIEn = RXCIE2;
-		static uint8_t const UDREn  = UDRE2;
-		static uint8_t const U2Xn   = U2X2;
-		static volatile uint8_t* UBRRnH()  { return &UBRR2H; }
-		static volatile uint8_t* UBRRnL()  { return &UBRR2L; }
-		static volatile uint8_t* UCSRnA()  { return &UCSR2A; }
-		static volatile uint8_t* UCSRnB()  { return &UCSR2B; }
-		static volatile uint8_t* UCSRnC()  { return &UCSR2C; }
-		static volatile uint8_t* UDRn()    { return &UDR2; }
-	};
-
-	struct DescSerial3
-	{
-		static uint8_t const RXENn  = RXEN3;
-		static uint8_t const TXENn  = TXEN3;
-		static uint8_t const RXCIEn = RXCIE3;
-		static uint8_t const UDREn  = UDRE3;
-		static uint8_t const U2Xn   = U2X3;
-		static volatile uint8_t* UBRRnH()  { return &UBRR3H; }
-		static volatile uint8_t* UBRRnL()  { return &UBRR3L; }
-		static volatile uint8_t* UCSRnA()  { return &UCSR3A; }
-		static volatile uint8_t* UCSRnB()  { return &UCSR3B; }
-		static volatile uint8_t* UCSRnC()  { return &UCSR3C; }
-		static volatile uint8_t* UDRn()    { return &UDR3; }
-	};
-
-
-#endif
-
-
 
 
   // TODO: support ATTiny84/85?
-  template <typename SerialDesc_T>
-  class HardwareSerial
+  template <typename SerialDesc_T, uint8_t RX_BUFFER_SIZE>
+  class HardwareSerial : public IHardwareSerial
   {
-
-  public:
-
-    static uint8_t const RX_BUFFER_SIZE = 16;
-
 
   private:
 
@@ -155,8 +90,7 @@ namespace fdv
     {
 			ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
 			{
-				s_buffer = &m_RXBuffer;    
-
+				SerialDesc_T::hardwareSerialInstance = this;
 				*SerialDesc_T::UCSRnA() = _BV(SerialDesc_T::U2Xn);
 				uint16_t const baud_setting = (F_CPU / 4 / baud - 1) / 2;
 				*SerialDesc_T::UBRRnH() = baud_setting >> 8;
@@ -166,6 +100,13 @@ namespace fdv
 				*SerialDesc_T::UCSRnC() = _BV(UCSZ01) | _BV(UCSZ00); 
 			}
     }
+		
+		
+		// implements IHardwareSerial
+		void put(uint8_t value)
+		{
+			m_RXBuffer.put(value);
+		}
 
 
     uint8_t available()
@@ -177,7 +118,7 @@ namespace fdv
     uint8_t read(uint8_t* buffer, uint8_t bufferLen)
     {
       uint8_t ret = 0;
-      for (;bufferLen>0 && m_RXBuffer.head != m_RXBuffer.tail; --bufferLen, ++ret)
+      for (;bufferLen > 0 && m_RXBuffer.head != m_RXBuffer.tail; --bufferLen, ++ret)
       {
         *buffer++ = m_RXBuffer.buffer[m_RXBuffer.tail];
         m_RXBuffer.tail = (m_RXBuffer.tail + 1) % RX_BUFFER_SIZE;
@@ -317,31 +258,91 @@ namespace fdv
     }
 
 
-
-    static RingBuffer* getBuffer()
-    {
-      return s_buffer;
-    }
-
-
   private:
 
-    static RingBuffer* s_buffer;
-	
     RingBuffer m_RXBuffer;
   };
 
 
-  template <typename SerialDesc_T>
-  typename HardwareSerial<SerialDesc_T>::RingBuffer* HardwareSerial<SerialDesc_T>::s_buffer;
 
-
-
-	typedef HardwareSerial<DescSerial0> HardwareSerial0;
+	struct DescSerial0
+	{
+		static uint8_t const RXENn  = RXEN0;
+		static uint8_t const TXENn  = TXEN0;
+		static uint8_t const RXCIEn = RXCIE0;
+		static uint8_t const UDREn  = UDRE0;
+		static uint8_t const U2Xn   = U2X0;
+		static volatile uint8_t* UBRRnH()  { return &UBRR0H; }
+		static volatile uint8_t* UBRRnL()  { return &UBRR0L; }
+		static volatile uint8_t* UCSRnA()  { return &UCSR0A; }
+		static volatile uint8_t* UCSRnB()  { return &UCSR0B; }
+		static volatile uint8_t* UCSRnC()  { return &UCSR0C; }
+		static volatile uint8_t* UDRn()    { return &UDR0; }
+		static IHardwareSerial* hardwareSerialInstance;
+	};
+	
+	
+	
 	#if defined(FDV_ATMEGA1280_2560)
-	typedef HardwareSerial<DescSerial1> HardwareSerial1;
-	typedef HardwareSerial<DescSerial2> HardwareSerial2;
-	typedef HardwareSerial<DescSerial3> HardwareSerial3;
+
+	struct DescSerial1
+	{
+		static uint8_t const RXENn  = RXEN1;
+		static uint8_t const TXENn  = TXEN1;
+		static uint8_t const RXCIEn = RXCIE1;
+		static uint8_t const UDREn  = UDRE1;
+		static uint8_t const U2Xn   = U2X1;
+		static volatile uint8_t* UBRRnH()  { return &UBRR1H; }
+		static volatile uint8_t* UBRRnL()  { return &UBRR1L; }
+		static volatile uint8_t* UCSRnA()  { return &UCSR1A; }
+		static volatile uint8_t* UCSRnB()  { return &UCSR1B; }
+		static volatile uint8_t* UCSRnC()  { return &UCSR1C; }
+		static volatile uint8_t* UDRn()    { return &UDR1; }
+		static IHardwareSerial* hardwareSerialInstance;
+	};
+
+	struct DescSerial2
+	{
+		static uint8_t const RXENn  = RXEN2;
+		static uint8_t const TXENn  = TXEN2;
+		static uint8_t const RXCIEn = RXCIE2;
+		static uint8_t const UDREn  = UDRE2;
+		static uint8_t const U2Xn   = U2X2;
+		static volatile uint8_t* UBRRnH()  { return &UBRR2H; }
+		static volatile uint8_t* UBRRnL()  { return &UBRR2L; }
+		static volatile uint8_t* UCSRnA()  { return &UCSR2A; }
+		static volatile uint8_t* UCSRnB()  { return &UCSR2B; }
+		static volatile uint8_t* UCSRnC()  { return &UCSR2C; }
+		static volatile uint8_t* UDRn()    { return &UDR2; }
+		static IHardwareSerial* hardwareSerialInstance;
+	};
+
+	struct DescSerial3
+	{
+		static uint8_t const RXENn  = RXEN3;
+		static uint8_t const TXENn  = TXEN3;
+		static uint8_t const RXCIEn = RXCIE3;
+		static uint8_t const UDREn  = UDRE3;
+		static uint8_t const U2Xn   = U2X3;
+		static volatile uint8_t* UBRRnH()  { return &UBRR3H; }
+		static volatile uint8_t* UBRRnL()  { return &UBRR3L; }
+		static volatile uint8_t* UCSRnA()  { return &UCSR3A; }
+		static volatile uint8_t* UCSRnB()  { return &UCSR3B; }
+		static volatile uint8_t* UCSRnC()  { return &UCSR3C; }
+		static volatile uint8_t* UDRn()    { return &UDR3; }
+		static IHardwareSerial* hardwareSerialInstance;
+	};
+
+
+	#endif
+
+
+
+	typedef HardwareSerial<DescSerial0, 16> HardwareSerial0;
+	#if defined(FDV_ATMEGA1280_2560)
+	typedef HardwareSerial<DescSerial1, 16> HardwareSerial1;
+	typedef HardwareSerial<DescSerial2, 16> HardwareSerial2;
+	typedef HardwareSerial<DescSerial3, 16> HardwareSerial3;
 	#endif
 
 

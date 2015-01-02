@@ -37,20 +37,15 @@ namespace fdv
 
 
 
-#define _SS_MAX_RX_BUFF 64 // RX buffer size
-
-
-
-
 // Only one instance at the time can be enabled to receive (to enable call listen(), to disable listen(false)). 
 // output pins: everyone
 // input pins:  everyone
-template <typename RXPIN_T, typename TXPIN_T>
+template <typename RXPIN_T, typename TXPIN_T, uint8_t RXBUFSIZE_V = 32>
 class SoftwareSerial : public PCExtInterrupt::IExtInterruptCallable
 {
 private:
 
-	char _receive_buffer[_SS_MAX_RX_BUFF];
+	char _receive_buffer[RXBUFSIZE_V];
 	volatile uint8_t _receive_buffer_tail;
 	volatile uint8_t _receive_buffer_head;
 
@@ -111,19 +106,20 @@ private:
 					return;	// invalid stop bit
 			
 				// if buffer full, set the overflow flag and return
-				if ((_receive_buffer_tail + 1) % _SS_MAX_RX_BUFF != _receive_buffer_head)
+				if ((_receive_buffer_tail + 1) % RXBUFSIZE_V != _receive_buffer_head)
 				{
 					// save new data in buffer: tail points to where byte goes
 					_receive_buffer[_receive_buffer_tail] = d; // save new byte
-					_receive_buffer_tail = (_receive_buffer_tail + 1) % _SS_MAX_RX_BUFF;
+					_receive_buffer_tail = (_receive_buffer_tail + 1) % RXBUFSIZE_V;
 				}
 				else
 				{
 					_buffer_overflow = true;
+					break;
 				}
 				
 				// wait for another start bit
-				t += _symbol_ticks;
+				t += _symbol_ticks << 1;	// double times
 				timer1SetCheckPointA(t);
 				while ((TIFR1 & (1 << OCF1A)) == 0 && RXPIN_T::read() != 0)
 					;
@@ -257,7 +253,7 @@ public:
 			{
 				// Read from "head"
 				r = _receive_buffer[_receive_buffer_head]; // grab next byte
-				_receive_buffer_head = (_receive_buffer_head + 1) % _SS_MAX_RX_BUFF;
+				_receive_buffer_head = (_receive_buffer_head + 1) % RXBUFSIZE_V;
 			}
 		}
 		return r;
@@ -269,7 +265,7 @@ public:
 		int r = 0;
 		ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
 		{
-			r = (_receive_buffer_tail + _SS_MAX_RX_BUFF - _receive_buffer_head) % _SS_MAX_RX_BUFF;
+			r = (_receive_buffer_tail + RXBUFSIZE_V - _receive_buffer_head) % RXBUFSIZE_V;
 		}
 		return r;
 	}

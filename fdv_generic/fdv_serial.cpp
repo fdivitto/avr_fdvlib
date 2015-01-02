@@ -44,31 +44,38 @@ namespace fdv
   // Interrupt handlers
 #if defined(FDV_ATMEGA1280_2560)
 
+	IHardwareSerial* DescSerial0::hardwareSerialInstance;
+	IHardwareSerial* DescSerial1::hardwareSerialInstance;
+	IHardwareSerial* DescSerial2::hardwareSerialInstance;
+	IHardwareSerial* DescSerial3::hardwareSerialInstance;
+
   ISR(USART0_RX_vect)
   {
-    HardwareSerial<DescSerial0>::getBuffer()->put(UDR0);
+    DescSerial0::hardwareSerialInstance->put(UDR0);
   }
 
   ISR(USART1_RX_vect)
   {
-    HardwareSerial<DescSerial1>::getBuffer()->put(UDR1);
+    DescSerial1::hardwareSerialInstance->put(UDR1);
   }
 
   ISR(USART2_RX_vect)
   {
-    HardwareSerial<DescSerial2>::getBuffer()->put(UDR2);
+    DescSerial2::hardwareSerialInstance->put(UDR2);
   }
 
   ISR(USART3_RX_vect)
   {
-    HardwareSerial<DescSerial3>::getBuffer()->put(UDR3);
+    DescSerial3::hardwareSerialInstance->put(UDR3);
   }
 
 #else
 
+	IHardwareSerial* DescSerial0::hardwareSerialInstance;
+
   ISR(USART_RX_vect)
   {
-    HardwareSerial<DescSerial0>::getBuffer()->put(UDR0);
+	  DescSerial0::hardwareSerialInstance->put(UDR0);
   }
 
 #endif
