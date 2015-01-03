@@ -21,15 +21,15 @@
 */
 
 
+
+#ifndef FDV_TIMERS_H_
+#define FDV_TIMERS_H_
+
 #include <inttypes.h>
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
-
-
-#ifndef FDV_TIMERS_H_
-#define FDV_TIMERS_H_
 
 
 //inline void timer1Reset()  __attribute__((always_inline));
