@@ -1,6 +1,6 @@
 /*
 # Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
-# Copyright (c) 2013 Fabrizio Di Vittorio.
+# Copyright (c) 2015 Fabrizio Di Vittorio.
 # All rights reserved.
 
 # GNU GPL LICENSE
@@ -30,6 +30,7 @@
 #include "fdv_pin.h"
 #include "fdv_interrupt.h"
 #include "fdv_timers.h"
+#include "fdv_serial.h"
 
 
 namespace fdv
@@ -41,18 +42,25 @@ namespace fdv
 // output pins: everyone
 // input pins:  everyone
 template <typename RXPIN_T, typename TXPIN_T, uint8_t RXBUFSIZE_V = 32>
-class SoftwareSerial : public PCExtInterrupt::IExtInterruptCallable
+class SoftwareSerial : public Serial<RXBUFSIZE_V>, public PCExtInterrupt::IExtInterruptCallable
 {
 	
 	
 public:
 	
+	using Serial<RXBUFSIZE_V>::peek;
+	using Serial<RXBUFSIZE_V>::read;
+	using Serial<RXBUFSIZE_V>::available;
+  using Serial<RXBUFSIZE_V>::isBufferOverflow;
+	using Serial<RXBUFSIZE_V>::put;
+	using Serial<RXBUFSIZE_V>::flush;
+
+
 	// public methods
 	SoftwareSerial(uint32_t baudRate) :
-		m_RXBufferTail(0),
-		m_RXBufferHead(0),
-		m_RXBufferOverflow(false)
-	{
+		Serial<RXBUFSIZE_V>()
+	{		
+
 		TXPIN_T::modeOutput();
 		TXPIN_T::writeHigh();
 
@@ -88,31 +96,11 @@ public:
 		PCExtInterrupt::attach(RXPIN_T::PCEXT_INT, NULL);
 		if (enable)
 		{
-			ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-			{
-				m_RXBufferOverflow = false;
-				m_RXBufferHead = m_RXBufferTail = 0;
-			}			
+			flush();
 			PCExtInterrupt::attach(RXPIN_T::PCEXT_INT, this);
 		}
 	}
-	
-	
-	int peek()
-	{
-		int r = -1;
-		ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-		{
-			// Empty buffer?
-			if (m_RXBufferHead == m_RXBufferTail)
-				r = -1;
-			else
-				// Read from "head"
-				r = m_RXBuffer[m_RXBufferHead];
-		}
-		return r;
-	}
-	
+		
 
 	size_t write(uint8_t b)
 	{
@@ -128,9 +116,6 @@ public:
 			for (uint8_t mask = 0x01; mask; mask <<= 1)
 			{
 				TXPIN_T::write(b & mask);
-		// debug
-		//TPinD4::writeHigh();
-		//TPinD4::writeLow();
 				t += m_symbolTicks;
 				timer1WaitA(t);
 			}
@@ -142,47 +127,7 @@ public:
 		}
 		return 1;
 	}
-	
-	
-	int read()
-	{
-		int r = -1;
-
-		ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-		{
-			// Empty buffer?
-			if (m_RXBufferHead == m_RXBufferTail)
-				r = -1;
-			else
-			{
-				// Read from "head"
-				r = m_RXBuffer[m_RXBufferHead]; // grab next byte
-				m_RXBufferHead = (m_RXBufferHead + 1) % RXBUFSIZE_V;
-			}
-		}
-		return r;
-	}
-	
-	
-	int available()
-	{
-		int r = 0;
-		ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-		{
-			r = (m_RXBufferTail + RXBUFSIZE_V - m_RXBufferHead) % RXBUFSIZE_V;
-		}
-		return r;
-	}
-	
-
-	void flush()
-	{
-		ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-		{
-			m_RXBufferHead = m_RXBufferTail = 0;			
-		}
-	}
-
+			
 
 private:
 
@@ -195,11 +140,6 @@ private:
 		{
 
 			timer1Reset(m_delay1);
-		// debug
-		/*TPinD4::writeHigh();
-		TPinD4::writeLow();
-		TPinD4::writeHigh();
-		TPinD4::writeLow();*/
 
 			while (true)
 			{				
@@ -214,11 +154,6 @@ private:
 					t += m_symbolTicks;
 					timer1WaitA(t);
 					d |= RXPIN_T::read() << i;
-		
-		// debug
-		//TPinD4::writeHigh();
-		//TPinD4::writeLow();
-		
 				}
 
 				// stop bit
@@ -231,19 +166,10 @@ private:
 				if (RXPIN_T::read() == 0)
 					return;	// invalid stop bit
 			
-				// if buffer full, set the overflow flag and return
-				if ((m_RXBufferTail + 1) % RXBUFSIZE_V != m_RXBufferHead)
-				{
-					// save new data in buffer: tail points to where byte goes
-					m_RXBuffer[m_RXBufferTail] = d; // save new byte
-					m_RXBufferTail = (m_RXBufferTail + 1) % RXBUFSIZE_V;
-				}
-				else
-				{
-					m_RXBufferOverflow = true;
+				put(d);
+				if (isBufferOverflow())
 					break;
-				}
-				
+
 				// wait for another start bit
 				t += m_symbolTicks << 1;	// double times
 				timer1SetCheckPointA(t);
@@ -258,11 +184,6 @@ private:
 
 
 private:
-
-	char             m_RXBuffer[RXBUFSIZE_V];
-	volatile uint8_t m_RXBufferTail;
-	volatile uint8_t m_RXBufferHead;
-	bool             m_RXBufferOverflow;
 
 	uint16_t m_symbolTicks;
 	uint16_t m_symbolTicksHalf;

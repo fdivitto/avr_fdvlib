@@ -48,9 +48,102 @@ namespace fdv
 	//////////////////////////////////////////////////////////////////////////////////
 	// Abstract base class for all serials (soft and hardware)
 
+	template <uint8_t RXBUFSIZE_V = 32>
 	class Serial
 	{
+		public:
 
+			Serial() :
+				m_RXBufferTail(0),
+				m_RXBufferHead(0),
+				m_RXBufferOverflow(false)
+			{
+			}
+
+
+			bool isBufferOverflow()
+			{
+				return m_RXBufferOverflow;
+			}
+
+
+			void put(uint8_t value)
+			{
+				// if buffer full, set the overflow flag and return
+				if ((m_RXBufferTail + 1) % RXBUFSIZE_V != m_RXBufferHead)
+				{
+					// save new data in buffer: tail points to where byte goes
+					m_RXBuffer[m_RXBufferTail] = value; // save new byte
+					m_RXBufferTail = (m_RXBufferTail + 1) % RXBUFSIZE_V;
+				}
+				else
+				{
+					m_RXBufferOverflow = true;
+				}
+			}
+
+
+			int peek()
+			{
+				int r = -1;
+				ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+				{					
+					if (m_RXBufferHead == m_RXBufferTail) // Empty buffer?
+						r = -1;
+					else
+						// Read from head
+						r = m_RXBuffer[m_RXBufferHead];
+				}
+				return r;
+			}
+
+
+			int read()
+			{
+				int r = -1;
+
+				ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+				{					
+					if (m_RXBufferHead == m_RXBufferTail)  // Empty buffer?
+						r = -1;
+					else
+					{
+						// Read from head
+						r = m_RXBuffer[m_RXBufferHead];
+						m_RXBufferHead = (m_RXBufferHead + 1) % RXBUFSIZE_V;
+					}
+				}
+				return r;
+			}
+
+
+			int available()
+			{
+				int r = 0;
+				ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+				{
+					r = (m_RXBufferTail + RXBUFSIZE_V - m_RXBufferHead) % RXBUFSIZE_V;
+				}
+				return r;
+			}
+
+
+			void flush()
+			{
+				ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+				{
+					m_RXBufferOverflow = false;
+					m_RXBufferHead = m_RXBufferTail = 0;
+				}
+			}
+
+
+	private:
+		char             m_RXBuffer[RXBUFSIZE_V];
+		volatile uint8_t m_RXBufferTail;
+		volatile uint8_t m_RXBufferHead;
+		bool             m_RXBufferOverflow;
+		
 	};
 
 
