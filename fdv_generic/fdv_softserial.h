@@ -57,7 +57,7 @@ public:
 
 
 	// public methods
-	SoftwareSerial(uint32_t baudRate) :
+	explicit SoftwareSerial(uint32_t baudRate) :
 		Serial<RXBUFSIZE_V>()
 	{		
 
@@ -102,7 +102,7 @@ public:
 	}
 		
 
-	size_t write(uint8_t b)
+	void write(uint8_t b)
 	{
 		ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
 		{
@@ -125,7 +125,6 @@ public:
 			t += m_symbolTicks;
 			timer1WaitA(t);
 		}
-		return 1;
 	}
 			
 
