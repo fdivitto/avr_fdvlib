@@ -54,6 +54,7 @@ public:
   using Serial<RXBUFSIZE_V>::isBufferOverflow;
 	using Serial<RXBUFSIZE_V>::put;
 	using Serial<RXBUFSIZE_V>::flush;
+	using Serial<RXBUFSIZE_V>::write;
 
 
 	// public methods

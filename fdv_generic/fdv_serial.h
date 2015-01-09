@@ -46,150 +46,116 @@ namespace fdv
 
 	//////////////////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////////
-	// Abstract base class (interface) to allow non-template dependent calls
+	// Abstract base class to allow non-template dependent calls
 
-	class ISerial
+	class SerialBase
 	{
 		public:
 			virtual void put(uint8_t value) = 0;
 			virtual void write(uint8_t b) = 0;
-	};
-
-
-	//////////////////////////////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////////////////////////////
-	// Template base class for all serials (soft and hardware)
-
-	template <uint8_t RXBUFSIZE_V = 32>
-	class Serial : public ISerial
-	{
-		public:
-
-			Serial() :
-				m_RXBufferTail(0),
-				m_RXBufferHead(0),
-				m_RXBufferOverflow(false)
-			{
-			}
-
-
-			bool isBufferOverflow()
-			{
-				return m_RXBufferOverflow;
-			}
-
-
-			void put(uint8_t value)
-			{
-				// if buffer full, set the overflow flag and return
-				if ((m_RXBufferTail + 1) % RXBUFSIZE_V != m_RXBufferHead)
-				{
-					// save new data in buffer: tail points to where byte goes
-					m_RXBuffer[m_RXBufferTail] = value; // save new byte
-					m_RXBufferTail = (m_RXBufferTail + 1) % RXBUFSIZE_V;
-				}
-				else
-				{
-					m_RXBufferOverflow = true;
-				}
-			}
-
-
-			int peek()
-			{
-				int r = -1;
-				ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-				{					
-					if (m_RXBufferHead == m_RXBufferTail) // Empty buffer?
-						r = -1;
-					else
-						// Read from head
-						r = m_RXBuffer[m_RXBufferHead];
-				}
-				return r;
-			}
-
-
-			int read()
-			{
-				int r = -1;
-
-				ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-				{					
-					if (m_RXBufferHead == m_RXBufferTail)  // Empty buffer?
-						r = -1;
-					else
-					{
-						// Read from head
-						r = m_RXBuffer[m_RXBufferHead];
-						m_RXBufferHead = (m_RXBufferHead + 1) % RXBUFSIZE_V;
-					}
-				}
-				return r;
-			}
-
-
+			virtual bool isBufferOverflow() = 0;
+			virtual int peek() = 0;
+			virtual int read() = 0;
+			virtual int available() = 0;
+			virtual void flush() = 0;
+			
 			uint8_t read(uint8_t* buffer, uint8_t bufferLen)
 			{
 				uint8_t ret = 0;
-				ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+				for (int c; bufferLen > 0 && (c = read()) > -1; --bufferLen, ++ret)
 				{
-					for (;bufferLen > 0 && m_RXBufferHead != m_RXBufferTail; --bufferLen, ++ret)
-					{
-						*buffer++ = m_RXBuffer[m_RXBufferHead];
-						m_RXBufferHead = (m_RXBufferHead + 1) % RXBUFSIZE_V;
-					}
+					*buffer++ = c;
 				}
 				return ret;
-			}
-
-
-			int available()
-			{
-				int r = 0;
-				ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-				{
-					r = (m_RXBufferTail + RXBUFSIZE_V - m_RXBufferHead) % RXBUFSIZE_V;
-				}
-				return r;
-			}
-
-
-			void flush()
-			{
-				ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-				{
-					m_RXBufferOverflow = false;
-					m_RXBufferHead = m_RXBufferTail = 0;
-				}
-			}
-
+			}			
+			
 
 			// timeout in ms
-			string const readLine(uint32_t timeout = 2000)
+			string const readLine(uint32_t timeOutMs = 2000)
 			{
-				uint32_t t1 = millis();
 				string out;
-				while (millisDiff(t1, millis()) < timeout)
+				SoftTimeOut timeOut(timeOutMs);
+				while (!timeOut)
 				{
 					if (available() > 0)
 					{
 						uint8_t c = read();
 						if (c == 0x0A)  // LF
-						break;
+							break;
 						if (c == 0x0D)  // CR+LF
 						{
 							read();  // bypass LF
 							break;
 						}
 						out.push_back(c);
-						t1 = millis();  // reset timout timer
+						timeOut.reset(timeOutMs);
 					}
 				}
 				return out;
 			}
-
-
+			
+			
+			bool waitFor(PGM_P waitStr, uint32_t timeOutMs = 500)
+			{
+				SoftTimeOut timeOut(timeOutMs);
+				uint8_t waitStrLen = strlen_P(waitStr);
+				while (!timeOut)
+				{
+					if (available() >= waitStrLen)
+					{
+						PGM_P ws = waitStr;
+						for (uint8_t i = 0; i != waitStrLen; ++i)
+						{
+							if (read() != pgm_read_byte(ws++))
+								break;
+							if (i == waitStrLen - 1)	// last char?
+								return true;
+						}
+					}
+				}
+				return false;
+			}
+			
+			
+			bool waitForNewLine(uint32_t timeOutMs = 500)
+			{
+				SoftTimeOut timeOut(timeOutMs);
+				while (!timeOut)
+				{
+					if (available() > 0)
+					{
+						if (read() == 0x0A) // LF (bypass CR and other chars)
+						  return true;
+					}
+				}
+				return false;
+			}
+			
+			
+			// consume serial input (up to charCount characters) until no chars received for timeOutMs
+			void consume(uint32_t timeOutMs = 500, uint16_t charCount = 65535)
+			{
+				SoftTimeOut timeOut(timeOutMs);
+				while (!timeOut)
+				{
+					if (available() > 0)
+					{
+						read();
+						if (--charCount == 0)
+							break;
+						timeOut.reset(timeOutMs);
+					}
+				}
+			}
+			
+			
+			void writeNewLine()
+			{
+				write(0x0D);
+				write(0x0A);	
+			}
+			
+			
 			void write(uint8_t const* buffer, uint16_t bufferLen)
 			{
 				for (;bufferLen > 0; --bufferLen)
@@ -269,7 +235,109 @@ namespace fdv
 					}
 					value = value - v * d;
 				}
+			}			
+			
+	};
+
+
+	//////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////
+	// Template base class for all serials (soft and hardware)
+	// Implements circular buffer
+
+	template <uint8_t RXBUFSIZE_V>
+	class Serial : public SerialBase
+	{
+		public:
+
+			Serial() :
+				m_RXBufferTail(0),
+				m_RXBufferHead(0),
+				m_RXBufferOverflow(false)
+			{
 			}
+
+
+			bool isBufferOverflow()
+			{
+				return m_RXBufferOverflow;
+			}
+
+
+			void put(uint8_t value)
+			{
+				ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+				{
+					// if buffer full, set the overflow flag and return
+					if ((m_RXBufferTail + 1) % RXBUFSIZE_V != m_RXBufferHead)
+					{
+						// save new data in buffer: tail points to where byte goes
+						m_RXBuffer[m_RXBufferTail] = value; // save new byte
+						m_RXBufferTail = (m_RXBufferTail + 1) % RXBUFSIZE_V;
+					}
+					else
+					{
+						m_RXBufferOverflow = true;
+					}					
+				}
+			}
+
+
+			int peek()
+			{
+				int r = -1;
+				ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+				{					
+					if (m_RXBufferHead == m_RXBufferTail) // Empty buffer?
+						r = -1;
+					else
+						// Read from head
+						r = m_RXBuffer[m_RXBufferHead];
+				}
+				return r;
+			}
+
+
+			int read()
+			{
+				int r = -1;
+
+				ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+				{					
+					if (m_RXBufferHead == m_RXBufferTail)  // Empty buffer?
+						r = -1;
+					else
+					{
+						// Read from head
+						r = m_RXBuffer[m_RXBufferHead];
+						m_RXBufferHead = (m_RXBufferHead + 1) % RXBUFSIZE_V;
+					}
+				}
+				return r;
+			}
+
+
+			int available()
+			{
+				int r = 0;
+				ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+				{
+					r = (m_RXBufferTail + RXBUFSIZE_V - m_RXBufferHead) % RXBUFSIZE_V;
+				}
+				return r;
+			}
+
+
+			void flush()
+			{
+				ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+				{
+					m_RXBufferOverflow = false;
+					m_RXBufferHead = m_RXBufferTail = 0;
+				}
+			}
+
+
 
 	private:
 
@@ -284,7 +352,7 @@ namespace fdv
 	//////////////////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////////
 
-  template <typename SerialDesc_T, uint8_t RXBUFSIZE_V>
+  template <typename SerialDesc_T, uint8_t RXBUFSIZE_V = 32>
   class HardwareSerial : public Serial<RXBUFSIZE_V>
   {
 
@@ -296,6 +364,7 @@ namespace fdv
 		using Serial<RXBUFSIZE_V>::isBufferOverflow;
 		using Serial<RXBUFSIZE_V>::put;
 		using Serial<RXBUFSIZE_V>::flush;
+		using Serial<RXBUFSIZE_V>::write;
 
 
     explicit HardwareSerial(uint32_t baud) :
@@ -338,7 +407,7 @@ namespace fdv
 		static volatile uint8_t* UCSRnB()  { return &UCSR0B; }
 		static volatile uint8_t* UCSRnC()  { return &UCSR0C; }
 		static volatile uint8_t* UDRn()    { return &UDR0; }
-		static ISerial* hardwareSerialInstance;
+		static SerialBase* hardwareSerialInstance;
 	};
 	
 	
@@ -358,7 +427,7 @@ namespace fdv
 		static volatile uint8_t* UCSRnB()  { return &UCSR1B; }
 		static volatile uint8_t* UCSRnC()  { return &UCSR1C; }
 		static volatile uint8_t* UDRn()    { return &UDR1; }
-		static ISerial* hardwareSerialInstance;
+		static SerialBase* hardwareSerialInstance;
 	};
 
 	struct DescSerial2
@@ -374,7 +443,7 @@ namespace fdv
 		static volatile uint8_t* UCSRnB()  { return &UCSR2B; }
 		static volatile uint8_t* UCSRnC()  { return &UCSR2C; }
 		static volatile uint8_t* UDRn()    { return &UDR2; }
-		static ISerial* hardwareSerialInstance;
+		static SerialBase* hardwareSerialInstance;
 	};
 
 	struct DescSerial3
@@ -390,7 +459,7 @@ namespace fdv
 		static volatile uint8_t* UCSRnB()  { return &UCSR3B; }
 		static volatile uint8_t* UCSRnC()  { return &UCSR3C; }
 		static volatile uint8_t* UDRn()    { return &UDR3; }
-		static ISerial* hardwareSerialInstance;
+		static SerialBase* hardwareSerialInstance;
 	};
 
 
