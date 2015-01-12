@@ -35,6 +35,8 @@ note:
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
+#include "fdv_webframework.h"
+
 
 namespace fdv
 {
@@ -47,20 +49,32 @@ namespace fdv
 	static char const STR_CWJAP[] PROGMEM = "CWJAP";
 	static char const STR_ATE0[] PROGMEM = "ATE0";
 	static char const STR_ATE1[] PROGMEM = "ATE1";
+	static char const STR_CIFSR[] PROGMEM = "CIFSR";
+	static char const STR_CIPMUX[] PROGMEM = "CIPMUX";
+	static char const STR_CIPSERVER[] PROGMEM = "CIPSERVER";
+	static char const STR_CIPSEND[] PROGMEM = "CIPSEND";
+	static char const STR_CIPCLOSE[] PROGMEM = "CIPCLOSE";
 
 
-	class ESP8266
+
+
+
+	///////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////
+
+	class ESP8266 : public ISender
 	{
 
 		public:			
 		
 			static uint8_t const FIRMWAREVERSIONLENGTH = 10;
+			static uint8_t const MAXIPADDRESSLENGTH    = 15;
 	
 	
 		public:
 			
-			explicit ESP8266(SerialBase* serial) :
-			  m_serial(serial), m_isAvailable(false)
+			explicit ESP8266(SerialBase* serial, SerialBase* debugSerial) :
+			  m_serial(serial), m_debug(debugSerial), m_isAvailable(false), m_serverListener(NULL)
 			{
 				m_isAvailable = setEcho(false);
 				
@@ -99,28 +113,15 @@ namespace fdv
 			// return zero terminated firmware version
 			bool getFirmwareVersion(char outValue[FIRMWAREVERSIONLENGTH + 1])
 			{
-				exec(STR_GMR, NULL, 0, 0);
-				TimeOut timeOut(500);
-				uint8_t i = 0;
-				while (i != FIRMWAREVERSIONLENGTH && !timeOut)
-				{
-					if (m_serial->available() > 0)
-					{
-						uint8_t c = m_serial->read();
-						if (c == 0x0D || c == 0x0A)
-							break;
-						outValue[i++] = c;
-					}
-				}
-				outValue[i] = 0;
-				return waitForOK();
+				return exec(STR_GMR, NULL, 0, outValue, FIRMWAREVERSIONLENGTH);
 			}
 			
 			
 			enum WiFiMode
 			{
 				Client,
-				AccessPoint
+				AccessPoint,
+				ClientAccessPoint
 			};
 			
 			bool setWiFiMode(WiFiMode mode)
@@ -134,6 +135,9 @@ namespace fdv
 					case AccessPoint:
 						p[0] = "2";
 						break;						
+					case ClientAccessPoint:
+						p[0] = "3";
+						break;
 				}
 				return exec(STR_CWMODE, p, 1) && reset();
 			}
@@ -158,14 +162,114 @@ namespace fdv
 				qPassword[len_password + 2] = 0;				
 				
 				char const* p[2] = {qSSID, qPassword};
-				return exec(STR_CWJAP, p, 2, 6000);
+				return exec(STR_CWJAP, p, 2, NULL, 0, 6000);
+			}
+			
+			
+			bool getIPAddress(char* outValue)
+			{
+				return exec(STR_CIFSR, NULL, 0, outValue, MAXIPADDRESSLENGTH);
+			}
+			
+			
+			bool setMultipleConnections(bool value)
+			{
+				char const* p[1] = {value? "1" : "0"};
+				return exec(STR_CIPMUX, p, 1);
+			}
+			
+			
+			bool listen(char const* port, IReceiver* listener)
+			{
+				m_serverListener = listener;
+				char const* p[2] = {"1", port};
+				return exec(STR_CIPSERVER, p, 2);
+			}
+			
+			
+			// process incoming data
+			void yield()
+			{
+				while (m_serial->available() > 0)
+				{
+					if (m_serial->peek() == '+')
+					{
+						if (m_serial->available() > 7)
+						{
+							uint8_t cmd[5];
+							m_serial->read(cmd, 5);
+							if (memcmp_P(cmd, PSTR("+IPD,"), 5) == 0)
+							{
+								// get ID
+								uint8_t ID = m_serial->read() - '0';
+								// get length
+								m_serial->read();	// bypass ','
+								uint16_t len = m_serial->readUInt32();
+								m_serial->read();	// bypass ':'
+								// get data
+								uint8_t data[len];
+								for (uint16_t i = 0; i != len; ++i)
+								{
+									if (!m_serial->waitForData())
+										return;	// timeout!
+									data[i] = m_serial->read();									
+								}
+								// call listener object
+								if (m_serverListener)
+									m_serverListener->receive(ID, data, len, this);
+							}
+						}
+					}
+					else
+						m_serial->read();	// discard this char
+				}
+			}
+			
+			
+			// implements ISender
+			void prepareSend(uint8_t ID, uint16_t dataLength)
+			{
+				char ID_str[2];
+				Utility::fmtUInt32(ID, ID_str, 2);
+				char dataLength_str[6];
+				Utility::fmtUInt32(dataLength, dataLength_str, 6);
+				char const* p[2] = {ID_str, dataLength_str};
+				exec(STR_CIPSEND, p, 2, NULL, 0, 0);
+				m_serial->waitFor(PSTR(">"));						
+			  m_debug->write_P(PSTR("prepareSend "));
+				m_debug->write(dataLength_str);
+				m_debug->writeNewLine();
+			}
+			
+			
+			// implements ISender
+			void sendChunk(char const* chunk, uint16_t chunkLength)
+			{
+				m_serial->write((uint8_t const*)chunk, chunkLength);				
+			}
+			
+			
+			// implements ISender
+			void sendChunk_P(PGM_P chunk)
+			{
+				m_serial->write_P(chunk);
+			}
+			
+			
+			// implements ISender			
+			bool closeConnection(uint8_t ID)
+			{
+				char ID_str[2];
+				Utility::fmtUInt32(ID, ID_str, 2);
+				char const* p[1] = {ID_str};
+				return exec(STR_CIPCLOSE, p, 1);
 			}
 			
 			
 		private:
 			
 			
-			bool exec(PGM_P cmd, char const* params[] = NULL, uint8_t paramsCount = 0, uint32_t timeOut = 500)
+			bool exec(PGM_P cmd, char const* params[] = NULL, uint8_t paramsCount = 0, char* result = NULL, uint8_t maxResultLen = 0, uint32_t timeOut = 500)
 			{
 				// send AT
 				m_serial->write_P(STR_ATP);
@@ -183,6 +287,21 @@ namespace fdv
 				}
 				// CR+LF
 				m_serial->writeNewLine();
+				// result
+				if (result)
+				{
+					uint8_t i = 0;
+					while (i != maxResultLen)
+					{
+						if (!m_serial->waitForData(timeOut))
+							break;	// timeout
+						uint8_t c = m_serial->read();
+						if (c == 0x0D || c == 0x0A)
+							break;
+						result[i++] = c;
+					}
+					result[i] = 0;
+				}
 				// wait reply
 				if (timeOut > 0)
 					return waitForOK(timeOut);
@@ -199,8 +318,10 @@ namespace fdv
 			
 		private:
 		
-			SerialBase* m_serial;
-			bool        m_isAvailable;
+			SerialBase*      m_serial;
+			SerialBase*      m_debug;
+			bool             m_isAvailable;
+			IReceiver* m_serverListener;
 		
 	};
 

@@ -54,15 +54,15 @@ namespace fdv
 			virtual void put(uint8_t value) = 0;
 			virtual void write(uint8_t b) = 0;
 			virtual bool isBufferOverflow() = 0;
-			virtual int peek() = 0;
-			virtual int read() = 0;
-			virtual int available() = 0;
+			virtual int16_t peek() = 0;
+			virtual int16_t read() = 0;
+			virtual uint16_t available() = 0;
 			virtual void flush() = 0;
 			
-			uint8_t read(uint8_t* buffer, uint8_t bufferLen)
+			uint16_t read(uint8_t* buffer, uint16_t bufferLen)
 			{
-				uint8_t ret = 0;
-				for (int c; bufferLen > 0 && (c = read()) > -1; --bufferLen, ++ret)
+				uint16_t ret = 0;
+				for (int16_t c; bufferLen > 0 && (c = read()) > -1; --bufferLen, ++ret)
 				{
 					*buffer++ = c;
 				}
@@ -95,6 +95,41 @@ namespace fdv
 			}
 			
 			
+			uint32_t readUInt32()
+			{
+				uint32_t result = 0;
+				uint8_t buf[10];
+				for (int8_t i = 0; i != 10; ++i)
+				{					
+					if (!waitForData())
+						break;	// timeout
+					char c = peek();
+					if (c < '0' || c > '9')
+					{
+						uint32_t mul = 1;
+						for (int8_t j = i - 1; j >= 0; --j)
+						{
+							result += buf[j] * mul;
+							mul *= 10;
+						}
+						break;
+					}
+					buf[i] = read() - '0';					
+				}
+				return result;
+			}
+			
+			
+			bool waitForData(uint32_t timeOutMs = 500)
+			{
+				SoftTimeOut timeOut(timeOutMs);
+				while (!timeOut)
+					if (available() > 0)
+						return true;
+				return false;
+			}
+			
+			
 			bool waitFor(PGM_P waitStr, uint32_t timeOutMs = 500)
 			{
 				SoftTimeOut timeOut(timeOutMs);
@@ -119,32 +154,26 @@ namespace fdv
 			
 			bool waitForNewLine(uint32_t timeOutMs = 500)
 			{
-				SoftTimeOut timeOut(timeOutMs);
-				while (!timeOut)
+				while (true)
 				{
-					if (available() > 0)
-					{
-						if (read() == 0x0A) // LF (bypass CR and other chars)
-						  return true;
-					}
+					if (!waitForData(timeOutMs))
+						return false;	// timeout
+					if (read() == 0x0A) // LF (bypass CR and other chars)
+						return true;
 				}
-				return false;
 			}
 			
 			
 			// consume serial input (up to charCount characters) until no chars received for timeOutMs
 			void consume(uint32_t timeOutMs = 500, uint16_t charCount = 65535)
 			{
-				SoftTimeOut timeOut(timeOutMs);
-				while (!timeOut)
+				while (true)
 				{
-					if (available() > 0)
-					{
-						read();
-						if (--charCount == 0)
-							break;
-						timeOut.reset(timeOutMs);
-					}
+					if (!waitForData(timeOutMs))
+						return;
+					read();
+					if (--charCount == 0)
+						break;
 				}
 			}
 			
@@ -283,9 +312,9 @@ namespace fdv
 			}
 
 
-			int peek()
+			int16_t peek()
 			{
-				int r = -1;
+				int16_t r = -1;
 				ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
 				{					
 					if (m_RXBufferHead == m_RXBufferTail) // Empty buffer?
@@ -298,9 +327,9 @@ namespace fdv
 			}
 
 
-			int read()
+			int16_t read()
 			{
-				int r = -1;
+				int16_t r = -1;
 
 				ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
 				{					
@@ -317,9 +346,9 @@ namespace fdv
 			}
 
 
-			int available()
+			uint16_t available()
 			{
-				int r = 0;
+				uint16_t r = 0;
 				ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
 				{
 					r = (m_RXBufferTail + RXBUFSIZE_V - m_RXBufferHead) % RXBUFSIZE_V;
