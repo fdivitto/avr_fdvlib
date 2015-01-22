@@ -41,19 +41,23 @@ note:
 namespace fdv
 {
 
-	static char const STR_OK[]  PROGMEM = "OK";
-	static char const STR_ATP[] PROGMEM = "AT+";
-	static char const STR_RST[] PROGMEM = "RST";
-	static char const STR_GMR[] PROGMEM = "GMR";
-	static char const STR_CWMODE[] PROGMEM = "CWMODE";
-	static char const STR_CWJAP[] PROGMEM = "CWJAP";
-	static char const STR_ATE0[] PROGMEM = "ATE0";
-	static char const STR_ATE1[] PROGMEM = "ATE1";
-	static char const STR_CIFSR[] PROGMEM = "CIFSR";
-	static char const STR_CIPMUX[] PROGMEM = "CIPMUX";
+	static char const STR_OK[]  PROGMEM       = "OK";
+	static char const STR_ATP[] PROGMEM       = "AT+";
+	static char const STR_RST[] PROGMEM       = "RST";
+	static char const STR_GMR[] PROGMEM       = "GMR";
+	static char const STR_CWMODE[] PROGMEM    = "CWMODE";
+	static char const STR_CWJAP[] PROGMEM     = "CWJAP";
+	static char const STR_ATE0[] PROGMEM      = "ATE0";
+	static char const STR_ATE1[] PROGMEM      = "ATE1";
+	static char const STR_CIFSR[] PROGMEM     = "CIFSR";
+	static char const STR_CIPMUX[] PROGMEM    = "CIPMUX";
 	static char const STR_CIPSERVER[] PROGMEM = "CIPSERVER";
-	static char const STR_CIPSEND[] PROGMEM = "CIPSEND";
-	static char const STR_CIPCLOSE[] PROGMEM = "CIPCLOSE";
+	static char const STR_CIPSEND[] PROGMEM   = "CIPSEND";
+	static char const STR_CIPCLOSE[] PROGMEM  = "CIPCLOSE";
+	static char const STR_CIPSTO[] PROGMEM    = "CIPSTO";
+	static char const STR_CIUPDATE[] PROGMEM  = "CIUPDATE";
+	static char const STR_SENDOK[] PROGMEM    = "SEND OK";
+	static char const STR_UNLINK[] PROGMEM    = "Unlink";
 
 
 
@@ -73,13 +77,13 @@ namespace fdv
 	
 		public:
 			
-			explicit ESP8266(SerialBase* serial, SerialBase* debugSerial) :
-			  m_serial(serial), m_debug(debugSerial), m_isAvailable(false), m_serverListener(NULL)
+			explicit ESP8266(SerialBase* serial) :
+			  m_serial(serial), m_isAvailable(false), m_serverListener(NULL), m_allowMultipleConnections(true)
 			{
-				m_isAvailable = setEcho(false);
+				reset();
 				
-				/*char firmVer[FIRMWAREVERSIONLENGTH + 1];
-				m_isAvailable = getFirmwareVersion(firmVer);*/
+			  char firmVer[FIRMWAREVERSIONLENGTH + 1];
+				m_isAvailable = getFirmwareVersion(firmVer);
 			}
 			
 			
@@ -103,9 +107,11 @@ namespace fdv
 			
 			bool reset()
 			{
+				setEcho(false);
 				bool ret = exec(STR_RST);
 				m_serial->consume(2500);
-				setEcho(false);
+				setEcho(false);	// necessary becase previous reset
+				setMultipleConnections(m_allowMultipleConnections);
 				return ret;
 			}
 								
@@ -174,16 +180,49 @@ namespace fdv
 			
 			bool setMultipleConnections(bool value)
 			{
+				m_allowMultipleConnections = value;
 				char const* p[1] = {value? "1" : "0"};
 				return exec(STR_CIPMUX, p, 1);
 			}
 			
 			
-			bool listen(char const* port, IReceiver* listener)
+			// value in seconds (0-28800)
+			// set after listen
+			bool setServerTimeout(uint16_t value)
+			{
+				char timeout_str[6];
+				Utility::fmtUInt32(value, timeout_str, 6);				
+				char const* p[1] = {timeout_str};
+				return exec(STR_CIPSTO, p, 1);
+			}
+			
+			
+			void updateFromCloud()
+			{
+				exec(STR_CIUPDATE, NULL, 0, NULL, 0, 0);
+				while (true)
+				{
+					if (m_serial->available() > 1)
+					{
+						char c = m_serial->read();
+						if (c == 'O' && m_serial->peek() == 'K')
+						{
+							c = m_serial->read();
+							m_serial->waitForNewLine();
+							reset();
+							break;
+						}
+					}	
+				}
+				
+			}
+			
+			
+			bool listen(char const* port, IReceiver* listener, uint16_t serverTimeout)
 			{
 				m_serverListener = listener;
 				char const* p[2] = {"1", port};
-				return exec(STR_CIPSERVER, p, 2);
+				return exec(STR_CIPSERVER, p, 2) && setServerTimeout(serverTimeout);
 			}
 			
 			
@@ -196,12 +235,17 @@ namespace fdv
 					{
 						if (m_serial->available() > 7)
 						{
-							uint8_t cmd[5];
-							m_serial->read(cmd, 5);
-							if (memcmp_P(cmd, PSTR("+IPD,"), 5) == 0)
+							uint8_t cmd[4];
+							m_serial->read(cmd, 4);
+							if (memcmp_P(cmd, PSTR("+IPD"), 4) == 0)
 							{
 								// get ID
-								uint8_t ID = m_serial->read() - '0';
+								uint8_t ID = 0;
+								if (m_allowMultipleConnections)
+								{
+									m_serial->read();	// bypass ','
+									ID = m_serial->read() - '0';
+								}								
 								// get length
 								m_serial->read();	// bypass ','
 								uint16_t len = m_serial->readUInt32();
@@ -216,7 +260,7 @@ namespace fdv
 								}
 								// call listener object
 								if (m_serverListener)
-									m_serverListener->receive(ID, data, len, this);
+									m_serverListener->receive(ID, data, len);
 							}
 						}
 					}
@@ -229,16 +273,21 @@ namespace fdv
 			// implements ISender
 			void prepareSend(uint8_t ID, uint16_t dataLength)
 			{
-				char ID_str[2];
-				Utility::fmtUInt32(ID, ID_str, 2);
 				char dataLength_str[6];
 				Utility::fmtUInt32(dataLength, dataLength_str, 6);
-				char const* p[2] = {ID_str, dataLength_str};
-				exec(STR_CIPSEND, p, 2, NULL, 0, 0);
-				m_serial->waitFor(PSTR(">"));						
-			  m_debug->write_P(PSTR("prepareSend "));
-				m_debug->write(dataLength_str);
-				m_debug->writeNewLine();
+				if (m_allowMultipleConnections)
+				{
+					char ID_str[2];
+					Utility::fmtUInt32(ID, ID_str, 2);
+					char const* p[2] = {ID_str, dataLength_str};
+					exec(STR_CIPSEND, p, 2, NULL, 0, 0);					
+				}
+				else
+				{
+					char const* p[1] = {dataLength_str};
+					exec(STR_CIPSEND, p, 1, NULL, 0, 0);					
+				}
+				m_serial->waitFor(PSTR(">"), 2000);
 			}
 			
 			
@@ -259,6 +308,13 @@ namespace fdv
 			// implements ISender			
 			bool closeConnection(uint8_t ID)
 			{
+				m_serial->waitFor(STR_SENDOK, 5000);
+				m_serial->waitForNewLine();
+				
+				m_serial->waitFor(STR_UNLINK, 500);
+				if (m_serial->waitForNewLine())
+					return true;
+				
 				char ID_str[2];
 				Utility::fmtUInt32(ID, ID_str, 2);
 				char const* p[1] = {ID_str};
@@ -319,9 +375,9 @@ namespace fdv
 		private:
 		
 			SerialBase*      m_serial;
-			SerialBase*      m_debug;
 			bool             m_isAvailable;
-			IReceiver* m_serverListener;
+			IReceiver*       m_serverListener;
+			bool             m_allowMultipleConnections;
 		
 	};
 

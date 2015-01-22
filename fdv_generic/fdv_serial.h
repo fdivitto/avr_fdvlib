@@ -50,6 +50,7 @@ namespace fdv
 
 	class SerialBase
 	{
+		
 		public:
 			virtual void put(uint8_t value) = 0;
 			virtual void write(uint8_t b) = 0;
@@ -58,6 +59,8 @@ namespace fdv
 			virtual int16_t read() = 0;
 			virtual uint16_t available() = 0;
 			virtual void flush() = 0;
+			virtual void setForward(SerialBase* forwardTo) = 0;
+					
 			
 			uint16_t read(uint8_t* buffer, uint16_t bufferLen)
 			{
@@ -131,7 +134,7 @@ namespace fdv
 			
 			
 			bool waitFor(PGM_P waitStr, uint32_t timeOutMs = 500)
-			{
+			{				
 				SoftTimeOut timeOut(timeOutMs);
 				uint8_t waitStrLen = strlen_P(waitStr);
 				while (!timeOut)
@@ -282,7 +285,8 @@ namespace fdv
 			Serial() :
 				m_RXBufferTail(0),
 				m_RXBufferHead(0),
-				m_RXBufferOverflow(false)
+				m_RXBufferOverflow(false),
+				m_forwardTo(NULL)
 			{
 			}
 
@@ -342,6 +346,10 @@ namespace fdv
 						m_RXBufferHead = (m_RXBufferHead + 1) % RXBUFSIZE_V;
 					}
 				}
+				
+				if (m_forwardTo && r > -1)
+					m_forwardTo->write(r);
+				
 				return r;
 			}
 
@@ -365,6 +373,13 @@ namespace fdv
 					m_RXBufferHead = m_RXBufferTail = 0;
 				}
 			}
+			
+			
+			// each char received will be sent to m_forwardTo
+			void setForward(SerialBase* forwardTo)
+			{
+				m_forwardTo = forwardTo;
+			}
 
 
 
@@ -374,6 +389,7 @@ namespace fdv
 		volatile uint8_t m_RXBufferTail;
 		volatile uint8_t m_RXBufferHead;
 		bool             m_RXBufferOverflow;
+  	SerialBase*      m_forwardTo;	
 		
 	};
 
