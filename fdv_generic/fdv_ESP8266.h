@@ -1,5 +1,5 @@
 /*
-# Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
+# Created by Fabrizio Di Vittorio (fdivitto2013@gmail.com)
 # Copyright (c) 2015 Fabrizio Di Vittorio.
 # All rights reserved.
 
@@ -59,7 +59,16 @@ namespace fdv
 	static char const STR_SENDOK[] PROGMEM    = "SEND OK";
 	static char const STR_UNLINK[] PROGMEM    = "Unlink";
 
-
+	/*
+	  1. Update to 0.92 using flash utility
+		2. Connect using serial at 115200
+		3. execute:
+		     AT+CWMODE=3   or   AT+CWMODE=1
+				 AT+RST
+				 AT+CWJAP="ssid","12345678"
+				 AT+CIFSR   <- just to check correct IP
+				 AT+CIUPDATE
+	*/
 
 
 
@@ -71,7 +80,6 @@ namespace fdv
 
 		public:			
 		
-			static uint8_t const FIRMWAREVERSIONLENGTH = 10;
 			static uint8_t const MAXIPADDRESSLENGTH    = 15;
 	
 	
@@ -82,8 +90,7 @@ namespace fdv
 			{
 				reset();
 				
-			  char firmVer[FIRMWAREVERSIONLENGTH + 1];
-				m_isAvailable = getFirmwareVersion(firmVer);
+				m_isAvailable = getFirmwareVersion(NULL) > 0;
 			}
 			
 			
@@ -116,10 +123,21 @@ namespace fdv
 			}
 								
 
-			// return zero terminated firmware version
-			bool getFirmwareVersion(char outValue[FIRMWAREVERSIONLENGTH + 1])
+			// fill outValue with zero terminated firmware version
+			// return firmware version length
+			// outValue can be NULL in order to just return firmware version length
+			uint8_t getFirmwareVersion(char* outValue, uint32_t timeOutMs = 500)
 			{
-				return exec(STR_GMR, NULL, 0, outValue, FIRMWAREVERSIONLENGTH);
+				if (outValue)
+				{
+					exec(STR_GMR, NULL, 0, outValue, 0, timeOutMs);
+					return strlen(outValue);
+				}
+				else
+				{
+					exec(STR_GMR, NULL, 0, NULL, 0, 0);
+					return m_serial->countCharsUntil("OK", true, timeOutMs);
+				}
 			}
 			
 			
@@ -299,9 +317,9 @@ namespace fdv
 			
 			
 			// implements ISender
-			void sendChunk_P(PGM_P chunk)
+			void sendChunk_P(PGM_P chunk, uint16_t chunkLength)
 			{
-				m_serial->write_P(chunk);
+				m_serial->write_P(chunk, chunkLength);
 			}
 			
 			

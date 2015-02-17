@@ -1,5 +1,5 @@
 /*
-# Created by Fabrizio Di Vittorio (fdivitto@gmail.com)
+# Created by Fabrizio Di Vittorio (fdivitto2013@gmail.com)
 # Copyright (c) 2013 Fabrizio Di Vittorio.
 # All rights reserved.
 
@@ -167,6 +167,50 @@ namespace fdv
 			}
 			
 			
+			// if newLine = true and endSequence == NULL -> wait for the first newline
+			// if newLine = false and endSequence != NULL -> wait only for endSequence
+			// if newLine = true and endSequence != NULL -> wait for endSequence + newLine
+			// note: endSequence and newline is not counted
+			// note: endSequence cannot be an empty string (""), but can be NULL
+			uint16_t countCharsUntil(char const* endSequence, bool newLine, uint32_t timeOutMs = 500)
+			{
+				uint16_t len = 0;
+				while (true)
+				{
+					if (!waitForData(timeOutMs))
+						return 0;	// timeout
+					char c = read();
+					if (endSequence)
+					{
+						char const* seq = endSequence;
+						for (uint16_t i = 0; ; ++seq, ++i)
+						{
+							if (*seq == c && *(seq + 1) == 0)
+							{
+								if (newLine)
+									waitForNewLine(timeOutMs);
+								return len;
+							}
+							if (*seq != c)
+							{
+								len += i;
+								break;
+							}
+							c = read();
+						}
+					}
+					else
+					if (newLine && (c == 0x0A || c == 0x0D))
+					{
+						if (available() > 0 && (peek() == 0x0A || peek() == 0x0D))
+						read();	// discard 0x0A or 0x0D
+						return len;
+					}
+					++len;
+				}				
+			}
+			
+			
 			// consume serial input (up to charCount characters) until no chars received for timeOutMs
 			void consume(uint32_t timeOutMs = 500, uint16_t charCount = 65535)
 			{
@@ -206,6 +250,13 @@ namespace fdv
 				uint8_t c;
 				while ( (c = pgm_read_byte(str++)) )
 					write(c);
+			}
+
+
+			void write_P(PGM_P buffer, uint16_t bufferLen)
+			{
+				for (;bufferLen > 0; --bufferLen)
+					write(pgm_read_byte(buffer++));
 			}
 
 
