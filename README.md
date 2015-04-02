@@ -11,7 +11,7 @@ ENC28J60, SD Card, ESP8266, SIM900, softserial.
 
 To add avr_fdvlib as link to Atmel Studio project run:
 
-mklink /J avr_fdvlib c:\sviluppo\avr_fdvlib
+mklink /J avr_fdvlib c:\avr_fdvlib_installation_path
 
 
 Now from Solution Explorer:
